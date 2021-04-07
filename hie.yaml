@@ -1,0 +1,10 @@
+cradle:
+  stack:
+    - path: "src"
+      component: "lib:hs-protoparser"
+
+    - path: "app/Main.hs"
+      component: "hs-protoparser:exe:hs-protoparser-exe"
+
+    - path: "test"
+      component: "hs-protoparser:test:hs-protoparser-test"

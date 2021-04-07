@@ -1,0 +1,64 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 39d0b998674617ab74b69a6545cd0aaf89f3ca27f2fca15ec4e1f1910fc22fce
+
+name:           hs-protoparser
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/pabloariasal/hs-protoparser#readme>
+homepage:       https://github.com/pabloariasal/hs-protoparser#readme
+bug-reports:    https://github.com/pabloariasal/hs-protoparser/issues
+author:         Pablo Arias
+maintainer:     pabloariasal@gmail.com
+copyright:      2021 Pablo Arias
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/pabloariasal/hs-protoparser
+
+library
+  exposed-modules:
+      HSProtoParser.Ast
+      HSProtoParser.Parser
+  other-modules:
+      Paths_hs_protoparser
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable hs-protoparser-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_hs_protoparser
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , hs-protoparser
+  default-language: Haskell2010
+
+test-suite hs-protoparser-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_hs_protoparser
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , hs-protoparser
+    , hspec
+  default-language: Haskell2010

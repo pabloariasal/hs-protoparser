@@ -1,0 +1,49 @@
+name:                hs-protoparser
+version:             0.1.0.0
+github:              "pabloariasal/hs-protoparser"
+license:             BSD3
+author:              "Pablo Arias"
+maintainer:          "pabloariasal@gmail.com"
+copyright:           "2021 Pablo Arias"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/pabloariasal/hs-protoparser#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+
+executables:
+  hs-protoparser-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hs-protoparser
+
+tests:
+  hs-protoparser-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hs-protoparser
+    - hspec
