@@ -1,27 +1,52 @@
 {-# LANGUAGE OverloadedStrings #-}
-import Data.Text (Text)
+
+import Data.Text (Text, append, pack)
 import Data.Void
+import HSProtoParser.Ast
+import HSProtoParser.Parser
 import Test.Hspec
 import Test.Hspec.Megaparsec
 import Text.Megaparsec
-import HSProtoParser.Ast
-import HSProtoParser.Parser
 
-test :: (ProtoFile -> a) -> Text -> Either (ParseErrorBundle Text Void) a
-test f t = f <$> parse parseProto "" t
+addSyntaxStatement :: Text -> Text
+addSyntaxStatement s = "syntax='proto3';\n" `append` s
+
+run :: Text -> Either (ParseErrorBundle Text Void) ProtoFile
+run = parse parseProto ""
+
+runMap :: (ProtoFile -> a) -> Text -> Either (ParseErrorBundle Text Void) a
+runMap f t = f <$> run t
+
+testSyntax :: Text -> Either (ParseErrorBundle Text Void) String
+testSyntax = runMap syntax
+
+testPackage :: Text -> Either (ParseErrorBundle Text Void) (Maybe String)
+testPackage t = runMap package (addSyntaxStatement t)
 
 main :: IO ()
 main = hspec $ do
-  describe "syntax statement parser" $ do
+  describe "[Parsing] Syntax Statement" $ do
     it "parses double quotes" $
-      test syntax "syntax = \"proto3\";" `shouldParse` "proto3"
+      testSyntax "syntax = \"proto3\";" `shouldParse` "proto3"
     it "parses single quotes" $
-      test syntax "syntax = 'proto3';" `shouldParse` "proto3"
+      testSyntax "syntax = 'proto3';" `shouldParse` "proto3"
     it "parses with space inbetween" $
-      test syntax "\n  \tsyntax   =  \n  'proto3';" `shouldParse` "proto3"
+      testSyntax "\n  \tsyntax   =  \n  'proto3';" `shouldParse` "proto3"
     it "fails if no syntax specified" $
-      parse parseProto ""  `shouldFailOn` ""
+      run `shouldFailOn` ""
     it "fails if syntax is not proto3" $
-      parse parseProto ""  `shouldFailOn` "syntax = 'proto2';"
+      run `shouldFailOn` "syntax = 'proto2';"
     it "fails if syntax is missing semicolon" $
-      parse parseProto ""  `shouldFailOn` "syntax = 'proto3'"
+      run `shouldFailOn` "syntax = 'proto3'"
+
+  describe "[Parsing] Package Specifier" $ do
+    it "parses package specifier" $
+      testPackage "package  \n F_o__o.b4332ar.RJ7_;" `shouldParse` Just "F_o__o.b4332ar.RJ7_"
+    it "fails if package specifier starts with '_'" $
+      testPackage "package _foo;" `shouldParse` Nothing
+    it "fails if sub package specifier starts with '_'" $
+      testPackage "package a._b;" `shouldParse` Nothing
+    it "fails if package specifier doesn't end with ';'" $
+      testPackage "package a.b;" `shouldParse` Nothing
+    it "fails if package specifier has symbol '!'" $
+      testPackage "package a!b;" `shouldParse` Nothing

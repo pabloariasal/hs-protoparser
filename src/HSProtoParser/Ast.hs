@@ -3,10 +3,8 @@ module HSProtoParser.Ast
   )
 where
 
-type Package = [String]
-
 data ProtoFile = ProtoFile
   { syntax :: String,
-    package :: Package
+    package :: Maybe String
   }
   deriving (Eq, Show)
