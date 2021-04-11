@@ -1,10 +1,12 @@
 module HSProtoParser.Ast
-  ( someFunc,
-    Ast,
+  ( ProtoFile (..),
   )
 where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+type Package = [String]
 
-type Ast = Int
+data ProtoFile = ProtoFile
+  { syntax :: String,
+    package :: Package
+  }
+  deriving (Eq, Show)
