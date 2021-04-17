@@ -12,7 +12,7 @@ addSyntaxStatement :: Text -> Text
 addSyntaxStatement s = "syntax='proto3';\n" `append` s
 
 run :: Text -> Either (ParseErrorBundle Text Void) ProtoFile
-run = parse parseProto ""
+run = parse protoParser ""
 
 runMap :: (ProtoFile -> a) -> Text -> Either (ParseErrorBundle Text Void) a
 runMap f t = f <$> run t

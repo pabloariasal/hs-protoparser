@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HSProtoParser.Parser
-  ( parseProto,
-    parsePackage,
+  ( protoParser,
+    parseProto,
   )
 where
 
@@ -49,15 +49,20 @@ parseSyntax = do
   _ <- symbol ";"
   return s
 
-parsePackage :: Parser Text
-parsePackage = do
+parsePackageDefinition :: Parser Text
+parsePackageDefinition = do
   _ <- symbol "package"
   p <- fullIdent
   _ <- symbol ";"
   return p
 
-parseProto :: Parser ProtoFile
-parseProto = do
+protoParser :: Parser ProtoFile
+protoParser = do
   syntax <- parseSyntax
-  package <- optional . try $ parsePackage
+  package <- optional . try $ parsePackageDefinition
   return (ProtoFile (T.unpack syntax) (T.unpack <$> package))
+
+parseProto :: String -> String -> Either String ProtoFile
+parseProto f i = case parse protoParser f (T.pack i) of
+  Left b -> Left $ errorBundlePretty b
+  Right p -> Right p
