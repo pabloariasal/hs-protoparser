@@ -10,11 +10,11 @@ where
 
 type PackageDefinition = String
 
-type SyntaxDefinition= String
+type SyntaxDefinition = String
 
-data AccessQualifier = Public | Weak | Default deriving (Eq, Show)
+data AccessQualifier = Public | Weak deriving (Eq, Show)
 
-data ImportStatement = ImportStatement AccessQualifier String deriving (Eq, Show)
+data ImportStatement = ImportStatement (Maybe AccessQualifier) String deriving (Eq, Show)
 
 data Message = Message deriving (Eq, Show)
 

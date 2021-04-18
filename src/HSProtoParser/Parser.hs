@@ -31,6 +31,14 @@ symbol = L.symbol sc
 betweenChar :: Char -> Parser Text -> Parser Text
 betweenChar c = between (char c) (char c)
 
+stringLiteral :: Parser Text
+stringLiteral = do
+  l <-
+    char '\'' *> manyTill L.charLiteral (char '\'')
+      <|> char '"' *> manyTill L.charLiteral (char '"')
+  _ <- sc
+  return $ T.pack l
+
 ident :: Parser Text
 ident = do
   a <- T.singleton <$> alphaNumChar
@@ -59,19 +67,23 @@ parsePackageDefinition = do
 parseImport :: Parser ImportStatement
 parseImport = do
   _ <- symbol "import"
-  return $ ImportStatement Public ""
+  access <- optional . try $ (Weak <$ symbol "weak" <|> Public <$ symbol "public")
+  path <- stringLiteral
+  _ <- symbol ";"
+  return $ ImportStatement access (T.unpack path)
 
 partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageDefinition])
-partitionTopLevelStatements = foldl acc init
+partitionTopLevelStatements = foldr acc init
   where
     init = ([], [])
-    acc  ~(imports, packages) (ImportStmt e) = (e : imports, packages)
-    acc  ~(imports, packages) (PackageDef e) = (imports, e : packages)
+    acc (ImportStmt e) ~(imports, packages) = (e : imports, packages)
+    acc (PackageDef e) ~(imports, packages) = (imports, e : packages)
 
 protoParser :: Parser ProtoFile
 protoParser = do
   syntax <- parseSyntax
   statements <- many $ choice [PackageDef <$> try parsePackageDefinition, ImportStmt <$> try parseImport]
+  _ <- eof
   let (imports, packages) = partitionTopLevelStatements statements
   return (ProtoFile syntax packages imports)
 

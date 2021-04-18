@@ -44,24 +44,30 @@ testSyntax =
 testPackage =
   describe "[Parsing] Package Definition" $ do
     it "parses package specifier" $
-      parsePackage "package  \n F_o__o.b4332ar.RJ7_;" `shouldParse` ["F_o__o.b4332ar.RJ7_"]
+      parsePackage "import '';package  \n F_o__o.b4332ar.RJ7_;" `shouldParse` ["F_o__o.b4332ar.RJ7_"]
     it "fails if package specifier starts with '_'" $
-      parsePackage "package _foo;" `shouldParse` []
+      run `shouldFailOn` addSyntaxStatement "package _foo;"
     it "fails if sub package specifier starts with '_'" $
-      parsePackage "package a._b;" `shouldParse` []
+      run `shouldFailOn` addSyntaxStatement "package a._b;"
     it "fails if package specifier doesn't end with ';'" $
-      parsePackage "package a.b;" `shouldParse` []
+      run `shouldFailOn` addSyntaxStatement "package a.b;"
     it "fails if package specifier has symbol '!'" $
-      parsePackage "package a!b;" `shouldParse` []
+      run `shouldFailOn` addSyntaxStatement "package a!b;"
 
 testImports =
   describe "[Parsing] Import Statements" $ do
+    it "parse simple import statement" $
+      parseImports "package foo;import public \"file.proto\";" `shouldParse` [ImportStatement (Just Public) "file.proto"]
     it "parses import statements in the right order" $
-      parseImports "import   public \"first.proto\";\nimport 'second.proto';\timport weak 'third.proto' "
-        `shouldParse` [ ImportStatement Public "first.proto",
-                        ImportStatement Default "second.proto",
-                        ImportStatement Weak "third.proto"
+      parseImports " import   public \"first\n.proto\";\nimport 'second.proto'   ;\timport weak 'third.proto'; "
+        `shouldParse` [ ImportStatement (Just Public) "first\n.proto",
+                        ImportStatement Nothing "second.proto",
+                        ImportStatement (Just Weak) "third.proto"
                       ]
+    it "fails with wrong access qualifier" $
+      run `shouldFailOn` addSyntaxStatement "import foo 'bar';"
+    it "fails if doesn't end with ';'" $
+      run `shouldFailOn` addSyntaxStatement "import 'bar'"
 
 main :: IO ()
 main = hspec $ do
