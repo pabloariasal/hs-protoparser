@@ -12,7 +12,7 @@ type PackageDefinition = String
 
 type SyntaxDefinition= String
 
-data AccessQualifier = Public | Weak deriving (Eq, Show)
+data AccessQualifier = Public | Weak | Default deriving (Eq, Show)
 
 data ImportStatement = ImportStatement AccessQualifier String deriving (Eq, Show)
 

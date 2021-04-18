@@ -62,12 +62,12 @@ parseImport = do
   return $ ImportStatement Public ""
 
 partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageDefinition])
-partitionTopLevelStatements = foldr acc init
+partitionTopLevelStatements = foldl acc init
   where
     init = ([], [])
     -- todo de we need lazy pattern match here?
-    acc (ImportStmt e) (imports, packages) = (e : imports, packages)
-    acc (PackageDef e) (imports, packages) = (imports, e : packages)
+    acc  (imports, packages) (ImportStmt e) = (e : imports, packages)
+    acc  (imports, packages) (PackageDef e) = (imports, e : packages)
 
 protoParser :: Parser ProtoFile
 protoParser = do
