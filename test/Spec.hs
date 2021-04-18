@@ -17,7 +17,7 @@ run = parse protoParser ""
 runMap :: (ProtoFile -> a) -> Text -> Either (ParseErrorBundle Text Void) a
 runMap f t = f <$> run t
 
-testSyntax :: Text -> Either (ParseErrorBundle Text Void) String
+testSyntax :: Text -> Either (ParseErrorBundle Text Void) SyntaxDefinition
 testSyntax = runMap syntax
 
 testPackage :: Text -> Either (ParseErrorBundle Text Void) [PackageDefinition]
@@ -25,7 +25,7 @@ testPackage t = runMap package (addSyntaxStatement t)
 
 main :: IO ()
 main = hspec $ do
-  describe "[Parsing] Syntax Statement" $ do
+  describe "[Parsing] Syntax Definition" $ do
     it "parses double quotes" $
       testSyntax "syntax = \"proto3\";" `shouldParse` "proto3"
     it "parses single quotes" $
@@ -39,7 +39,7 @@ main = hspec $ do
     it "fails if syntax is missing semicolon" $
       run `shouldFailOn` "syntax = 'proto3'"
 
-  describe "[Parsing] Package Specifier" $ do
+  describe "[Parsing] Package Definition" $ do
     it "parses package specifier" $
       testPackage "package  \n F_o__o.b4332ar.RJ7_;" `shouldParse` ["F_o__o.b4332ar.RJ7_"]
     it "fails if package specifier starts with '_'" $
