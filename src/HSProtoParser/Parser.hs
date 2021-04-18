@@ -65,9 +65,8 @@ partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [Packa
 partitionTopLevelStatements = foldl acc init
   where
     init = ([], [])
-    -- todo de we need lazy pattern match here?
-    acc  (imports, packages) (ImportStmt e) = (e : imports, packages)
-    acc  (imports, packages) (PackageDef e) = (imports, e : packages)
+    acc  ~(imports, packages) (ImportStmt e) = (e : imports, packages)
+    acc  ~(imports, packages) (PackageDef e) = (imports, e : packages)
 
 protoParser :: Parser ProtoFile
 protoParser = do
@@ -79,5 +78,5 @@ protoParser = do
 parseProto :: String -> String -> Either String ProtoFile
 parseProto f i = case parse protoParser f (T.pack i) of
   Left b -> Left $ errorBundlePretty b
-  -- todo check if there are multiple package definitions present
+  -- TODO check if there are multiple package definitions present
   Right p -> Right p
