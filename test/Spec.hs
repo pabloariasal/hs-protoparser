@@ -20,7 +20,7 @@ runMap f t = f <$> run t
 testSyntax :: Text -> Either (ParseErrorBundle Text Void) String
 testSyntax = runMap syntax
 
-testPackage :: Text -> Either (ParseErrorBundle Text Void) (Maybe String)
+testPackage :: Text -> Either (ParseErrorBundle Text Void) [PackageDefinition]
 testPackage t = runMap package (addSyntaxStatement t)
 
 main :: IO ()
@@ -41,12 +41,12 @@ main = hspec $ do
 
   describe "[Parsing] Package Specifier" $ do
     it "parses package specifier" $
-      testPackage "package  \n F_o__o.b4332ar.RJ7_;" `shouldParse` Just "F_o__o.b4332ar.RJ7_"
+      testPackage "package  \n F_o__o.b4332ar.RJ7_;" `shouldParse` ["F_o__o.b4332ar.RJ7_"]
     it "fails if package specifier starts with '_'" $
-      testPackage "package _foo;" `shouldParse` Nothing
+      testPackage "package _foo;" `shouldParse` []
     it "fails if sub package specifier starts with '_'" $
-      testPackage "package a._b;" `shouldParse` Nothing
+      testPackage "package a._b;" `shouldParse` []
     it "fails if package specifier doesn't end with ';'" $
-      testPackage "package a.b;" `shouldParse` Nothing
+      testPackage "package a.b;" `shouldParse` []
     it "fails if package specifier has symbol '!'" $
-      testPackage "package a!b;" `shouldParse` Nothing
+      testPackage "package a!b;" `shouldParse` []

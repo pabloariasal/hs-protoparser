@@ -40,29 +40,44 @@ ident = do
 fullIdent :: Parser Text
 fullIdent = T.intercalate (T.singleton '.') <$> (ident `sepBy1` char '.')
 
-parseSyntax :: Parser Text
+parseSyntax :: Parser SyntaxStatement
 parseSyntax = do
   _ <- sc
   _ <- symbol "syntax"
   _ <- symbol "="
   s <- betweenChar '"' (symbol "proto3") <|> betweenChar '\'' (symbol "proto3")
   _ <- symbol ";"
-  return s
+  return (T.unpack s)
 
-parsePackageDefinition :: Parser Text
+parsePackageDefinition :: Parser PackageDefinition
 parsePackageDefinition = do
   _ <- symbol "package"
   p <- fullIdent
   _ <- symbol ";"
-  return p
+  return $ T.unpack p
+
+parseImport :: Parser ImportStatement
+parseImport = do
+  _ <- symbol "import"
+  return $ ImportStatement Public ""
+
+partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageDefinition])
+partitionTopLevelStatements = foldr acc init
+  where
+    init = ([], [])
+    -- todo de we need lazy pattern match here?
+    acc (ImportStmt e) (imports, packages) = (e : imports, packages)
+    acc (PackageDef e) (imports, packages) = (imports, e : packages)
 
 protoParser :: Parser ProtoFile
 protoParser = do
   syntax <- parseSyntax
-  package <- optional . try $ parsePackageDefinition
-  return (ProtoFile (T.unpack syntax) (T.unpack <$> package))
+  statements <- many $ choice [PackageDef <$> try parsePackageDefinition, ImportStmt <$> try parseImport]
+  let (imports, packages) = partitionTopLevelStatements statements
+  return (ProtoFile syntax packages imports)
 
 parseProto :: String -> String -> Either String ProtoFile
 parseProto f i = case parse protoParser f (T.pack i) of
   Left b -> Left $ errorBundlePretty b
+  -- todo check if there are multiple package definitions present
   Right p -> Right p
