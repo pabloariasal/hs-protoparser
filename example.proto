@@ -1,0 +1,5 @@
+syntax = "proto3";
+package foo.bar;
+import "first.proto";
+package foo.bar;
+import weak 'second.proto';
