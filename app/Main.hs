@@ -23,5 +23,5 @@ runParser :: String -> IO String -> IO ()
 runParser s i = do
   c <- i
   case parseProto s c of
-    Left e -> print e >> exitFailure
+    Left e -> putStr e >> exitFailure
     Right t -> print t >> exitSuccess
