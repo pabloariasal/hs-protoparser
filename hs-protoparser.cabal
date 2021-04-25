@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b23368415745823b96186ba7d2272fddd9a43ff93384e6d20f5432f3bcbcf7ff
+-- hash: f9be50e48c8b8ff9969b6d56c2826b19888be730898d15084c8f9cc87b5cc322
 
 name:           hs-protoparser
 version:        0.1.0.0
@@ -33,7 +33,7 @@ library
       Paths_hs_protoparser
   hs-source-dirs:
       src
-  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-missing-deriving-strategies -Wno-missing-safe-haskell-mode
   build-depends:
       base >=4.7 && <5
     , megaparsec
@@ -46,12 +46,10 @@ executable hs-protoparser-exe
       Paths_hs_protoparser
   hs-source-dirs:
       app
-  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-missing-deriving-strategies -Wno-missing-safe-haskell-mode -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , hs-protoparser
-    , megaparsec
-    , text
   default-language: Haskell2010
 
 test-suite hs-protoparser-test
@@ -61,12 +59,10 @@ test-suite hs-protoparser-test
       Paths_hs_protoparser
   hs-source-dirs:
       test
-  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-missing-deriving-strategies -Wno-missing-safe-haskell-mode -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , hs-protoparser
     , hspec
     , hspec-megaparsec
-    , megaparsec
-    , text
   default-language: Haskell2010

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Data.Text (Text, append, pack)
+import Data.Text (Text, append)
 import Data.Void
 import HSProtoParser.Ast
 import HSProtoParser.Parser
@@ -26,6 +26,7 @@ parsePackage t = runMap package (addSyntaxStatement t)
 parseImports :: Text -> Either (ParseErrorBundle Text Void) [ImportStatement]
 parseImports t = runMap imports (addSyntaxStatement t)
 
+testSyntax :: SpecWith ()
 testSyntax =
   describe "[Parsing] Syntax Definition" $ do
     it "parses double quotes" $
@@ -41,6 +42,7 @@ testSyntax =
     it "fails if syntax is missing semicolon" $
       run `shouldFailOn` "syntax = 'proto3'"
 
+testPackage :: SpecWith ()
 testPackage =
   describe "[Parsing] Package Definition" $ do
     it "parses package specifier" $
@@ -54,6 +56,7 @@ testPackage =
     it "fails if package specifier has symbol '!'" $
       run `shouldFailOn` addSyntaxStatement "package a!b;"
 
+testImports :: SpecWith ()
 testImports =
   describe "[Parsing] Import Statements" $ do
     it "parse simple import statement" $

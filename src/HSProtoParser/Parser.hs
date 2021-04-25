@@ -1,3 +1,4 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module HSProtoParser.Parser
@@ -7,13 +8,14 @@ module HSProtoParser.Parser
 where
 
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Void
 import HSProtoParser.Ast
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
-import Text.Megaparsec.Debug
+import Text.Megaparsec.Char.Lexer qualified as L
+
+-- import Text.Megaparsec.Debug
 
 type Parser = Parsec Void Text
 
@@ -73,19 +75,19 @@ parseImport = do
   return $ ImportStatement access (T.unpack path)
 
 partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageDefinition])
-partitionTopLevelStatements = foldr acc init
+partitionTopLevelStatements = foldr acc initVal
   where
-    init = ([], [])
-    acc (ImportStmt e) ~(imports, packages) = (e : imports, packages)
-    acc (PackageDef e) ~(imports, packages) = (imports, e : packages)
+    initVal = ([], [])
+    acc (ImportStmt e) ~(importSts, packages) = (e : importSts, packages)
+    acc (PackageDef e) ~(importSts, packages) = (importSts, e : packages)
 
 protoParser :: Parser ProtoFile
 protoParser = do
-  syntax <- parseSyntax
+  syntaxDef <- parseSyntax
   statements <- many $ choice [PackageDef <$> try parsePackageDefinition, ImportStmt <$> try parseImport]
   _ <- eof
-  let (imports, packages) = partitionTopLevelStatements statements
-  return (ProtoFile syntax packages imports)
+  let (importStatements, packages) = partitionTopLevelStatements statements
+  return (ProtoFile syntaxDef packages importStatements)
 
 parseProto :: String -> String -> Either String ProtoFile
 parseProto f i = case parse protoParser f (T.pack i) of

@@ -1,6 +1,7 @@
+{-# OPTIONS -Wno-missing-export-lists #-}
+
 module Main where
 
-import HSProtoParser.Ast
 import HSProtoParser.Parser
 import System.Environment
 import System.Exit
@@ -12,6 +13,7 @@ parseArgs :: [String] -> IO ()
 parseArgs ["--help"] = printUsage
 parseArgs [] = runParser "" getContents
 parseArgs [f] = runParser f (readFile f)
+parseArgs _ = printUsage
 
 printUsage :: IO ()
 printUsage = do
