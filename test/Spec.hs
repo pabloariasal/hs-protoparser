@@ -79,8 +79,8 @@ testImportStatements =
     it "fails if doesn't end with ';'" $
       run `shouldFailOn` addSyntaxStatement "import 'bar'"
 
-testEmpyStatement :: SpecWith ()
-testEmpyStatement =
+testEmptyStatement :: SpecWith ()
+testEmptyStatement =
   describe "[Parsing] Empty Statement" $ do
     it "parses empty statement" $
       run "syntax = \"proto3\"; ; \t;;  \t;package foo;\n;;import 'bla.proto';;;"
@@ -150,6 +150,6 @@ main = hspec $ do
   testSyntaxDefinition
   testPackageSpecifier
   testImportStatements
-  testEmpyStatement
+  testEmptyStatement
   testOptionDefinition
   testEnumDefinition
