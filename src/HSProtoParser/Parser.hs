@@ -153,6 +153,15 @@ parseEnumDefinition = do
   let (ops, efs) = partitionEnumBodyElements body
   return (EnumDefinition n ops efs)
 
+data TopLevelStatement
+  = PackageSpec PackageSpecification
+  | ImportStmt ImportStatement
+  | MessageDef Message
+  | EnumDef EnumDefinition
+  | ServiceDef Service
+  | OptionDef OptionDefinition
+  deriving (Eq, Show)
+
 partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageSpecification], [OptionDefinition], [EnumDefinition])
 partitionTopLevelStatements = foldr acc initVal
   where

@@ -8,7 +8,8 @@ module HSProtoParser.Ast
     Constant (..),
     ImportStatement (..),
     AccessQualifier (..),
-    TopLevelStatement (..),
+    Message (..),
+    Service (..)
   )
 where
 
@@ -47,15 +48,6 @@ data EnumDefinition = EnumDefinition
 data Service = Service deriving (Eq, Show)
 
 type OptionDefinition = (String, Constant)
-
-data TopLevelStatement
-  = PackageSpec PackageSpecification
-  | ImportStmt ImportStatement
-  | MessageDef Message
-  | EnumDef EnumDefinition
-  | ServiceDef Service
-  | OptionDef OptionDefinition
-  deriving (Eq, Show)
 
 data ProtoFile = ProtoFile
   { syntaxStmt :: SyntaxStatement,
