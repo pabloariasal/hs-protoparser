@@ -59,22 +59,22 @@ parseSyntax = do
   _ <- symbol ";"
   return (T.unpack s)
 
-parsePackageDefinition :: Parser PackageDefinition
-parsePackageDefinition = do
+parsePackageSpecification :: Parser PackageSpecification
+parsePackageSpecification = do
   _ <- symbol "package"
   p <- fullIdent
   _ <- symbol ";"
   return $ T.unpack p
 
-parseImport :: Parser ImportStatement
-parseImport = do
+parseImportStatement :: Parser ImportStatement
+parseImportStatement = do
   _ <- symbol "import"
   access <- optional . try $ (Weak <$ symbol "weak" <|> Public <$ symbol "public")
   path <- stringLiteral
   _ <- symbol ";"
   return $ ImportStatement access (T.unpack path)
 
-partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageDefinition])
+partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageSpecification])
 partitionTopLevelStatements = foldr acc initVal
   where
     initVal = ([], [])
@@ -83,11 +83,16 @@ partitionTopLevelStatements = foldr acc initVal
 
 protoParser :: Parser ProtoFile
 protoParser = do
-  syntaxDef <- parseSyntax
-  statements <- many $ choice [PackageDef <$> try parsePackageDefinition, ImportStmt <$> try parseImport]
+  sy <- parseSyntax
+  statements <-
+    many $
+      choice
+        [ PackageDef <$> try parsePackageSpecification,
+          ImportStmt <$> try parseImportStatement
+        ]
   _ <- eof
-  let (importStatements, packages) = partitionTopLevelStatements statements
-  return (ProtoFile syntaxDef packages importStatements)
+  let (im, pa) = partitionTopLevelStatements statements
+  return (ProtoFile sy pa im)
 
 parseProto :: String -> String -> Either String ProtoFile
 parseProto f i = case parse protoParser f (T.pack i) of

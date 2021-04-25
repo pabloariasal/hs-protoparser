@@ -1,14 +1,14 @@
 module HSProtoParser.Ast
   ( ProtoFile (..),
     SyntaxDefinition,
-    PackageDefinition,
+    PackageSpecification,
     ImportStatement (..),
     AccessQualifier (..),
     TopLevelStatement (..),
   )
 where
 
-type PackageDefinition = String
+type PackageSpecification = String
 
 type SyntaxDefinition = String
 
@@ -23,7 +23,7 @@ data Enumeration = Enumeration deriving (Eq, Show)
 data Service = Service deriving (Eq, Show)
 
 data TopLevelStatement
-  = PackageDef PackageDefinition
+  = PackageDef PackageSpecification
   | ImportStmt ImportStatement
   | MessageDef Message
   | EnumDef Enumeration
@@ -31,8 +31,8 @@ data TopLevelStatement
   deriving (Eq, Show)
 
 data ProtoFile = ProtoFile
-  { syntax :: SyntaxDefinition,
-    package :: [PackageDefinition],
-    imports :: [ImportStatement]
+  { syntaxDef :: SyntaxDefinition,
+    packageSpec :: [PackageSpecification],
+    importStmts :: [ImportStatement]
   }
   deriving (Eq, Show)

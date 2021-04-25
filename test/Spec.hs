@@ -18,16 +18,16 @@ runMap :: (ProtoFile -> a) -> Text -> Either (ParseErrorBundle Text Void) a
 runMap f t = f <$> run t
 
 parseSyntax :: Text -> Either (ParseErrorBundle Text Void) SyntaxDefinition
-parseSyntax = runMap syntax
+parseSyntax = runMap syntaxDef
 
-parsePackage :: Text -> Either (ParseErrorBundle Text Void) [PackageDefinition]
-parsePackage t = runMap package (addSyntaxStatement t)
+parsePackage :: Text -> Either (ParseErrorBundle Text Void) [PackageSpecification]
+parsePackage t = runMap packageSpec (addSyntaxStatement t)
 
 parseImports :: Text -> Either (ParseErrorBundle Text Void) [ImportStatement]
-parseImports t = runMap imports (addSyntaxStatement t)
+parseImports t = runMap importStmts (addSyntaxStatement t)
 
-testSyntax :: SpecWith ()
-testSyntax =
+testSyntaxDefinition :: SpecWith ()
+testSyntaxDefinition =
   describe "[Parsing] Syntax Definition" $ do
     it "parses double quotes" $
       parseSyntax "syntax = \"proto3\";" `shouldParse` "proto3"
@@ -42,9 +42,9 @@ testSyntax =
     it "fails if syntax is missing semicolon" $
       run `shouldFailOn` "syntax = 'proto3'"
 
-testPackage :: SpecWith ()
-testPackage =
-  describe "[Parsing] Package Definition" $ do
+testPackageSpecifier :: SpecWith ()
+testPackageSpecifier =
+  describe "[Parsing] Package Specifier" $ do
     it "parses package specifier" $
       parsePackage "import '';package  \n F_o__o.b4332ar.RJ7_;" `shouldParse` ["F_o__o.b4332ar.RJ7_"]
     it "fails if package specifier starts with '_'" $
@@ -56,8 +56,8 @@ testPackage =
     it "fails if package specifier has symbol '!'" $
       run `shouldFailOn` addSyntaxStatement "package a!b;"
 
-testImports :: SpecWith ()
-testImports =
+testImportStatements :: SpecWith ()
+testImportStatements =
   describe "[Parsing] Import Statements" $ do
     it "parse simple import statement" $
       parseImports "package foo;import public \"file.proto\";" `shouldParse` [ImportStatement (Just Public) "file.proto"]
@@ -74,6 +74,6 @@ testImports =
 
 main :: IO ()
 main = hspec $ do
-  testSyntax
-  testPackage
-  testImports
+  testSyntaxDefinition
+  testPackageSpecifier
+  testImportStatements
