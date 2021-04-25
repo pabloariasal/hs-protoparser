@@ -56,14 +56,14 @@ parseSyntax = do
   _ <- symbol "syntax"
   _ <- symbol "="
   s <- betweenChar '"' (symbol "proto3") <|> betweenChar '\'' (symbol "proto3")
-  _ <- symbol ";"
+  _ <- some $ symbol ";"
   return (T.unpack s)
 
 parsePackageSpecification :: Parser PackageSpecification
 parsePackageSpecification = do
   _ <- symbol "package"
   p <- fullIdent
-  _ <- symbol ";"
+  _ <- some $ symbol ";"
   return $ T.unpack p
 
 parseImportStatement :: Parser ImportStatement
@@ -71,7 +71,7 @@ parseImportStatement = do
   _ <- symbol "import"
   access <- optional . try $ (Weak <$ symbol "weak" <|> Public <$ symbol "public")
   path <- stringLiteral
-  _ <- symbol ";"
+  _ <- some $ symbol ";"
   return $ ImportStatement access (T.unpack path)
 
 partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageSpecification])
