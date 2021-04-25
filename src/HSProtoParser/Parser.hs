@@ -21,7 +21,7 @@ import Text.Megaparsec.Char.Lexer qualified as L
 type Parser = Parsec Void Text
 
 sc :: Parser ()
-sc = L.space space1 empty empty
+sc = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
 
 -- verbatim strings, consuming trailing whitespace
 symbol :: Text -> Parser Text
@@ -107,7 +107,7 @@ parseOptionName :: Parser Text
 parseOptionName = T.append <$> (simple <|> surrounded) <*> (T.concat <$> many suffix)
   where
     simple = ident
-    surrounded = between (char '(') (char ')') parseFullIdent
+    surrounded = between (symbol "(") (symbol ")") parseFullIdent
     suffix = T.append <$> (T.singleton <$> char '.') <*> ident
 
 parseOptionDefinition :: Parser OptionDefinition
@@ -119,14 +119,49 @@ parseOptionDefinition = do
   _ <- some $ symbol ";"
   return (T.unpack k, v)
 
-partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageSpecification], [OptionDefinition])
+data EnumBodyElement = En EnumField | Op OptionDefinition | Empty
+
+parseEnumValueOption :: Parser OptionDefinition
+parseEnumValueOption = do
+  n <- T.unpack <$> parseOptionName
+  _ <- symbol "="
+  k <- parseConstant
+  return (n, k)
+
+parseEnumField :: Parser EnumField
+parseEnumField = do
+  n <- T.unpack <$> ident
+  _ <- symbol "="
+  v <- signedInteger
+  o <- between (symbol "[") (symbol "]") (parseEnumValueOption `sepBy1` symbol ",") <|> [] <$ lookAhead (symbol ";")
+  _ <- some $ symbol ";"
+  return (EnumField n v o)
+
+partitionEnumBodyElements :: [EnumBodyElement] -> ([OptionDefinition], [EnumField])
+partitionEnumBodyElements = foldr acc initVal
+  where
+    initVal = ([], [])
+    acc (Op e) ~(op, ef) = (e : op, ef)
+    acc (En e) ~(op, ef) = (op, e : ef)
+    acc Empty ~(op, ef) = (op, ef)
+
+parseEnumDefinition :: Parser EnumDefinition
+parseEnumDefinition = do
+  _ <- symbol "enum"
+  n <- T.unpack <$> ident
+  body <- between (symbol "{") (symbol "}") (many (Op <$> parseOptionDefinition <|> En <$> parseEnumField <|> Empty <$ symbol ";"))
+  let (ops, efs) = partitionEnumBodyElements body
+  return (EnumDefinition n ops efs)
+
+partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageSpecification], [OptionDefinition], [EnumDefinition])
 partitionTopLevelStatements = foldr acc initVal
   where
-    initVal = ([], [], [])
-    acc (ImportStmt e) ~(importSts, packages, opts) = (e : importSts, packages, opts)
-    acc (PackageSpec e) ~(importSts, packages, opts) = (importSts, e : packages, opts)
-    acc (OptionDef e) ~(importSts, packages, opts) = (importSts, packages, e : opts)
-    acc _ ~(importSts, packages, opts) = (importSts, packages, opts)
+    initVal = ([], [], [], [])
+    acc (ImportStmt e) ~(im, pa, op, en) = (e : im, pa, op, en)
+    acc (PackageSpec e) ~(im, pa, op, en) = (im, e : pa, op, en)
+    acc (OptionDef e) ~(im, pa, op, en) = (im, pa, e : op, en)
+    acc (EnumDef e) ~(im, pa, op, en) = (im, pa, op, e : en)
+    acc _ ~(im, pa, op, en) = (im, pa, op, en)
 
 protoParser :: Parser ProtoFile
 protoParser = do
@@ -136,11 +171,12 @@ protoParser = do
       choice
         [ PackageSpec <$> try parsePackageSpecification,
           ImportStmt <$> try parseImportStatement,
-          OptionDef <$> try parseOptionDefinition
+          OptionDef <$> try parseOptionDefinition,
+          EnumDef <$> try parseEnumDefinition
         ]
   _ <- eof
-  let (im, pa, op) = partitionTopLevelStatements tls
-  return (ProtoFile sy pa im op)
+  let (im, pa, op, en) = partitionTopLevelStatements tls
+  return (ProtoFile sy pa im op en)
 
 parseProto :: String -> String -> Either String ProtoFile
 parseProto f i = case parse protoParser f (T.pack i) of

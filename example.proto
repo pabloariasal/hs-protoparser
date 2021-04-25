@@ -9,3 +9,9 @@ option option_3 = true;
 import weak 'second.proto';
 option option_2 = -1e5;
 option option_4 = 666;
+
+enum MyEnum {
+    V1 = -6 [my_bool=true, my_float=1e4];
+    option my_opt = foo.bar;
+    V2 = 8;
+}

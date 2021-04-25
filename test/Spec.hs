@@ -30,6 +30,9 @@ parseImports t = runMap importStmts (addSyntaxStatement t)
 parseOptions :: Text -> Either (ParseErrorBundle Text Void) [OptionDefinition]
 parseOptions t = runMap optionDefs (addSyntaxStatement t)
 
+parseEnums :: Text -> Either (ParseErrorBundle Text Void) [EnumDefinition]
+parseEnums t = runMap enumDefs (addSyntaxStatement t)
+
 testSyntaxDefinition :: SpecWith ()
 testSyntaxDefinition =
   describe "[Parsing] Syntax Definition" $ do
@@ -81,7 +84,7 @@ testEmpyStatement =
   describe "[Parsing] Empty Statement" $ do
     it "parses empty statement" $
       run "syntax = \"proto3\"; ; \t;;  \t;package foo;\n;;import 'bla.proto';;;"
-        `shouldParse` ProtoFile "proto3" ["foo"] [ImportStatement Nothing "bla.proto"] []
+        `shouldParse` ProtoFile "proto3" ["foo"] [ImportStatement Nothing "bla.proto"] [] []
 
 testOptionDefinition :: SpecWith ()
 testOptionDefinition =
@@ -122,6 +125,26 @@ testOptionDefinition =
     it "fails if closing parenthesis is missing" $
       run `shouldFailOn` addSyntaxStatement "option (a = false;"
 
+testEnumDefinition :: SpecWith ()
+testEnumDefinition =
+  describe "[Parsing] Enum Definitions" $ do
+    it "parse simple enum" $
+      parseEnums "enum Enum\n {\nUNKNOWN = 0;\n;;; RUNNING = -2;\n}"
+        `shouldParse` [EnumDefinition "Enum" [] [EnumField "UNKNOWN" 0 [], EnumField "RUNNING" (negate 2) []]]
+    it "parse enum with options (1/2)" $
+      parseEnums "enum Enum\n {option allow_alias = true\t;\n UNKNOWN = 0;}"
+        `shouldParse` [EnumDefinition "Enum" [("allow_alias", BoolLit True)] [EnumField "UNKNOWN" 0 []]]
+    it "parse enum with options (2/2)" $
+      parseEnums "enum Enum\n {UNKNOWN = 0; option allow_alias=false;}"
+        `shouldParse` [EnumDefinition "Enum" [("allow_alias", BoolLit False)] [EnumField "UNKNOWN" 0 []]]
+    it "parse enum with value options" $
+      parseEnums "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\", my_int=6];}"
+        `shouldParse` [EnumDefinition "Enum" [] [EnumField "RUNNING" 2 [("custom_option", StringLit "foo"), ("my_int", IntLit 6)]]]
+    it "fails if closing square bracket is missing" $
+      run `shouldFailOn` addSyntaxStatement "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\";}"
+    it "fails if no value options specified" $
+      run `shouldFailOn` addSyntaxStatement "enum Enum\n {RUNNING = 2 [];}"
+
 main :: IO ()
 main = hspec $ do
   testSyntaxDefinition
@@ -129,3 +152,4 @@ main = hspec $ do
   testImportStatements
   testEmpyStatement
   testOptionDefinition
+  testEnumDefinition

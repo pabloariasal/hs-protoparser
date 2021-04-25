@@ -3,6 +3,8 @@ module HSProtoParser.Ast
     SyntaxStatement,
     PackageSpecification,
     OptionDefinition,
+    EnumDefinition (..),
+    EnumField (..),
     Constant (..),
     ImportStatement (..),
     AccessQualifier (..),
@@ -28,7 +30,19 @@ data ImportStatement = ImportStatement (Maybe AccessQualifier) String deriving (
 
 data Message = Message deriving (Eq, Show)
 
-data Enumeration = Enumeration deriving (Eq, Show)
+data EnumField = EnumField
+  { identifier :: String,
+    value :: Int,
+    enumValOpts :: [OptionDefinition]
+  }
+  deriving (Eq, Show)
+
+data EnumDefinition = EnumDefinition
+  { name :: String,
+    options :: [OptionDefinition],
+    fields :: [EnumField]
+  }
+  deriving (Eq, Show)
 
 data Service = Service deriving (Eq, Show)
 
@@ -38,7 +52,7 @@ data TopLevelStatement
   = PackageSpec PackageSpecification
   | ImportStmt ImportStatement
   | MessageDef Message
-  | EnumDef Enumeration
+  | EnumDef EnumDefinition
   | ServiceDef Service
   | OptionDef OptionDefinition
   deriving (Eq, Show)
@@ -47,6 +61,7 @@ data ProtoFile = ProtoFile
   { syntaxStmt :: SyntaxStatement,
     packageSpec :: [PackageSpecification],
     importStmts :: [ImportStatement],
-    optionDefs :: [OptionDefinition]
+    optionDefs :: [OptionDefinition],
+    enumDefs :: [EnumDefinition]
   }
   deriving (Eq, Show)
