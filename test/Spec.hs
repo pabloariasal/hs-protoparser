@@ -33,11 +33,11 @@ parseOptions t = runMap optionDefs (addSyntaxStatement t)
 testSyntaxDefinition :: SpecWith ()
 testSyntaxDefinition =
   describe "[Parsing] Syntax Definition" $ do
-    it "parses double quotes" $
+    it "double quotes" $
       parseSyntax "syntax = \"proto3\";" `shouldParse` "proto3"
-    it "parses single quotes" $
+    it "single quotes" $
       parseSyntax "syntax = 'proto3';" `shouldParse` "proto3"
-    it "parses with space inbetween" $
+    it "with space inbetween" $
       parseSyntax "\n  \tsyntax   =  \n  'proto3';" `shouldParse` "proto3"
     it "fails if no syntax specified" $
       run `shouldFailOn` ""
