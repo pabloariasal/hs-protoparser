@@ -89,6 +89,9 @@ testOptionDefinition =
     it "string literals" $
       parseOptions "option java_package = \"com.example.foo\";;"
         `shouldParse` [("java_package", StringLit "com.example.foo")]
+    it "string literals" $
+      parseOptions "option java_package = \"com.example.foo\";;"
+        `shouldParse` [("java_package", StringLit "com.example.foo")]
     it "identifiers" $
       parseOptions "option java_package =    foo.bar;"
         `shouldParse` [("java_package", Identifier "foo.bar")]
@@ -113,6 +116,11 @@ testOptionDefinition =
                         ("sl", StringLit "666"),
                         ("bl", BoolLit False)
                       ]
+    it "parentherized option name" $
+      parseOptions "option (custom_option).foo.bar = false;"
+        `shouldParse` [("custom_option.foo.bar", BoolLit False)]
+    it "fails if closing parenthesis is missing" $
+      run `shouldFailOn` addSyntaxStatement "option (a = false;"
 
 main :: IO ()
 main = hspec $ do

@@ -102,10 +102,17 @@ parseConstant =
       FloatLit <$> try signedFloat
     ]
 
+parseOptionName :: Parser Text
+parseOptionName = T.append <$> (simple <|> surrounded) <*> (T.concat <$> many suffix)
+  where
+    simple = ident
+    surrounded = between (char '(') (char ')') parseFullIdent
+    suffix = T.append <$> (T.singleton <$> char '.') <*> ident
+
 parseOptionDefinition :: Parser OptionDefinition
 parseOptionDefinition = do
   _ <- symbol "option"
-  k <- ident
+  k <- parseOptionName
   _ <- symbol "="
   v <- parseConstant
   _ <- some $ symbol ";"
