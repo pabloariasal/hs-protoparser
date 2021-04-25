@@ -1,6 +1,6 @@
 module HSProtoParser.Ast
   ( ProtoFile (..),
-    SyntaxDefinition,
+    SyntaxStatement,
     PackageSpecification,
     ImportStatement (..),
     AccessQualifier (..),
@@ -10,7 +10,7 @@ where
 
 type PackageSpecification = String
 
-type SyntaxDefinition = String
+type SyntaxStatement = String
 
 data AccessQualifier = Public | Weak deriving (Eq, Show)
 
@@ -31,7 +31,7 @@ data TopLevelStatement
   deriving (Eq, Show)
 
 data ProtoFile = ProtoFile
-  { syntaxDef :: SyntaxDefinition,
+  { syntaxStmt :: SyntaxStatement,
     packageSpec :: [PackageSpecification],
     importStmts :: [ImportStatement]
   }

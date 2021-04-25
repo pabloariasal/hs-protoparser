@@ -11,14 +11,15 @@ import Text.Megaparsec
 addSyntaxStatement :: Text -> Text
 addSyntaxStatement s = "syntax='proto3';\n" `append` s
 
+-- runs the proto parser with the provided input
 run :: Text -> Either (ParseErrorBundle Text Void) ProtoFile
 run = parse protoParser ""
 
 runMap :: (ProtoFile -> a) -> Text -> Either (ParseErrorBundle Text Void) a
 runMap f t = f <$> run t
 
-parseSyntax :: Text -> Either (ParseErrorBundle Text Void) SyntaxDefinition
-parseSyntax = runMap syntaxDef
+parseSyntax :: Text -> Either (ParseErrorBundle Text Void) SyntaxStatement
+parseSyntax = runMap syntaxStmt
 
 parsePackage :: Text -> Either (ParseErrorBundle Text Void) [PackageSpecification]
 parsePackage t = runMap packageSpec (addSyntaxStatement t)

@@ -50,7 +50,7 @@ ident = do
 fullIdent :: Parser Text
 fullIdent = T.intercalate (T.singleton '.') <$> (ident `sepBy1` char '.')
 
-parseSyntax :: Parser SyntaxDefinition
+parseSyntax :: Parser SyntaxStatement
 parseSyntax = do
   _ <- sc
   _ <- symbol "syntax"
