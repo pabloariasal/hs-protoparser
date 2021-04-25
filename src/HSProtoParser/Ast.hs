@@ -3,7 +3,7 @@ module HSProtoParser.Ast
     SyntaxStatement,
     PackageSpecification,
     OptionDefinition,
-    Constant(..),
+    Constant (..),
     ImportStatement (..),
     AccessQualifier (..),
     TopLevelStatement (..),

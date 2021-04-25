@@ -15,6 +15,7 @@ import HSProtoParser.Ast
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
+
 -- import Text.Megaparsec.Debug
 
 type Parser = Parsec Void Text
