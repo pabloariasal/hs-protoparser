@@ -7,6 +7,7 @@ module HSProtoParser.Parser
   )
 where
 
+import Data.Scientific (toRealFloat)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Void
@@ -14,7 +15,6 @@ import HSProtoParser.Ast
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
-
 -- import Text.Megaparsec.Debug
 
 type Parser = Parsec Void Text
@@ -27,8 +27,20 @@ symbol :: Text -> Parser Text
 symbol = L.symbol sc
 
 -- generic lexemes, consuming trailing whitespace
--- lexeme :: Parser a -> Parser a
--- lexeme = L.lexeme sc
+lexeme :: Parser a -> Parser a
+lexeme = L.lexeme sc
+
+integer :: Parser Int
+integer = lexeme (L.decimal <* notFollowedBy (char '.' <|> char 'e' <|> char 'E'))
+
+signedInteger :: Parser Int
+signedInteger = L.signed sc integer
+
+float :: Parser Float
+float = toRealFloat <$> lexeme L.scientific
+
+signedFloat :: Parser Float
+signedFloat = L.signed sc float
 
 betweenChar :: Char -> Parser Text -> Parser Text
 betweenChar c = between (char c) (char c)
@@ -41,14 +53,20 @@ stringLiteral = do
   _ <- sc
   return $ T.pack l
 
+-- starts with a letter, followed by any combination of alphanumeric and '_'
 ident :: Parser Text
 ident = do
-  a <- T.singleton <$> alphaNumChar
-  r <- T.pack <$> some (alphaNumChar <|> char '_')
+  a <- T.singleton <$> letterChar
+  r <- T.pack <$> many (alphaNumChar <|> char '_')
+  _ <- sc
   return (a `T.append` r)
 
-fullIdent :: Parser Text
-fullIdent = T.intercalate (T.singleton '.') <$> (ident `sepBy1` char '.')
+boolLit :: Parser Bool
+boolLit = True <$ symbol "true" <|> False <$ "false"
+
+-- '.' separated idents
+parseFullIdent :: Parser Text
+parseFullIdent = T.intercalate (T.singleton '.') <$> (ident `sepBy1` char '.')
 
 parseSyntax :: Parser SyntaxStatement
 parseSyntax = do
@@ -62,7 +80,7 @@ parseSyntax = do
 parsePackageSpecification :: Parser PackageSpecification
 parsePackageSpecification = do
   _ <- symbol "package"
-  p <- fullIdent
+  p <- parseFullIdent
   _ <- some $ symbol ";"
   return $ T.unpack p
 
@@ -74,25 +92,47 @@ parseImportStatement = do
   _ <- some $ symbol ";"
   return $ ImportStatement access (T.unpack path)
 
-partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageSpecification])
+parseConstant :: Parser Constant
+parseConstant =
+  choice
+    [ BoolLit <$> try boolLit,
+      StringLit . T.unpack <$> try stringLiteral,
+      Identifier . T.unpack <$> try parseFullIdent,
+      IntLit <$> try signedInteger,
+      FloatLit <$> try signedFloat
+    ]
+
+parseOptionDefinition :: Parser OptionDefinition
+parseOptionDefinition = do
+  _ <- symbol "option"
+  k <- ident
+  _ <- symbol "="
+  v <- parseConstant
+  _ <- some $ symbol ";"
+  return (T.unpack k, v)
+
+partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageSpecification], [OptionDefinition])
 partitionTopLevelStatements = foldr acc initVal
   where
-    initVal = ([], [])
-    acc (ImportStmt e) ~(importSts, packages) = (e : importSts, packages)
-    acc (PackageDef e) ~(importSts, packages) = (importSts, e : packages)
+    initVal = ([], [], [])
+    acc (ImportStmt e) ~(importSts, packages, opts) = (e : importSts, packages, opts)
+    acc (PackageSpec e) ~(importSts, packages, opts) = (importSts, e : packages, opts)
+    acc (OptionDef e) ~(importSts, packages, opts) = (importSts, packages, e : opts)
+    acc _ ~(importSts, packages, opts) = (importSts, packages, opts)
 
 protoParser :: Parser ProtoFile
 protoParser = do
   sy <- parseSyntax
-  statements <-
+  tls <-
     many $
       choice
-        [ PackageDef <$> try parsePackageSpecification,
-          ImportStmt <$> try parseImportStatement
+        [ PackageSpec <$> try parsePackageSpecification,
+          ImportStmt <$> try parseImportStatement,
+          OptionDef <$> try parseOptionDefinition
         ]
   _ <- eof
-  let (im, pa) = partitionTopLevelStatements statements
-  return (ProtoFile sy pa im)
+  let (im, pa, op) = partitionTopLevelStatements tls
+  return (ProtoFile sy pa im op)
 
 parseProto :: String -> String -> Either String ProtoFile
 parseProto f i = case parse protoParser f (T.pack i) of

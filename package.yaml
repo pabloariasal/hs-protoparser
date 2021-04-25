@@ -43,6 +43,8 @@ ghc-options:
 
 library:
   source-dirs: src
+  dependencies:
+  - scientific
 
 executables:
   hs-protoparser-exe:

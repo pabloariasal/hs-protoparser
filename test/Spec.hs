@@ -27,6 +27,9 @@ parsePackage t = runMap packageSpec (addSyntaxStatement t)
 parseImports :: Text -> Either (ParseErrorBundle Text Void) [ImportStatement]
 parseImports t = runMap importStmts (addSyntaxStatement t)
 
+parseOptions :: Text -> Either (ParseErrorBundle Text Void) [OptionDefinition]
+parseOptions t = runMap optionDefs (addSyntaxStatement t)
+
 testSyntaxDefinition :: SpecWith ()
 testSyntaxDefinition =
   describe "[Parsing] Syntax Definition" $ do
@@ -53,7 +56,7 @@ testPackageSpecifier =
     it "fails if sub package specifier starts with '_'" $
       run `shouldFailOn` addSyntaxStatement "package a._b;"
     it "fails if package specifier doesn't end with ';'" $
-      run `shouldFailOn` addSyntaxStatement "package a.b;"
+      run `shouldFailOn` addSyntaxStatement "package a.b"
     it "fails if package specifier has symbol '!'" $
       run `shouldFailOn` addSyntaxStatement "package a!b;"
 
@@ -78,8 +81,38 @@ testEmpyStatement =
   describe "[Parsing] Empty Statement" $ do
     it "parses empty statement" $
       run "syntax = \"proto3\"; ; \t;;  \t;package foo;\n;;import 'bla.proto';;;"
-        `shouldParse`
-          ProtoFile "proto3" ["foo"] [ImportStatement Nothing "bla.proto"]
+        `shouldParse` ProtoFile "proto3" ["foo"] [ImportStatement Nothing "bla.proto"] []
+
+testOptionDefinition :: SpecWith ()
+testOptionDefinition =
+  describe "[Parsing] Option Definitions" $ do
+    it "string literals" $
+      parseOptions "option java_package = \"com.example.foo\";;"
+        `shouldParse` [("java_package", StringLit "com.example.foo")]
+    it "identifiers" $
+      parseOptions "option java_package =    foo.bar;"
+        `shouldParse` [("java_package", Identifier "foo.bar")]
+    it "int literals" $
+      parseOptions "option num1 = -5;option num2=+42;option num3=666;"
+        `shouldParse` [("num1", IntLit (negate 5)), ("num2", IntLit 42), ("num3", IntLit 666)]
+    it "float literals" $
+      parseOptions "option n1=+4.4;option n2 = -1e5;option n3=+10.0E-1;option n4=666;"
+        `shouldParse` [ ("n1", FloatLit 4.4),
+                        ("n2", FloatLit (negate 100000)),
+                        ("n3", FloatLit 1.0),
+                        ("n4", IntLit 666)
+                      ]
+    it "boolean literals" $
+      parseOptions "option b1 = false;option b2=true;;"
+        `shouldParse` [("b1", BoolLit False), ("b2", BoolLit True)]
+    it "combined" $
+      parseOptions "option fl=-4.4;option id = foo;option il=42;option sl=\"666\";option bl=false;"
+        `shouldParse` [ ("fl", FloatLit (negate 4.4)),
+                        ("id", Identifier "foo"),
+                        ("il", IntLit 42),
+                        ("sl", StringLit "666"),
+                        ("bl", BoolLit False)
+                      ]
 
 main :: IO ()
 main = hspec $ do
@@ -87,3 +120,4 @@ main = hspec $ do
   testPackageSpecifier
   testImportStatements
   testEmpyStatement
+  testOptionDefinition
