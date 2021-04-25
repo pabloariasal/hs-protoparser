@@ -1,5 +1,11 @@
 syntax = "proto3";
 package foo.bar;
 import "first.proto";
+option option_1 = "my_option_1";
+;
 package foo.bar;
+option option_3 = true;
+;
 import weak 'second.proto';
+option option_2 = -1e5;
+option option_4 = 666;
