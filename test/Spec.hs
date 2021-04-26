@@ -128,7 +128,7 @@ testOptionDefinition =
 testEnumDefinition :: SpecWith ()
 testEnumDefinition =
   describe "[Parsing] Enum Definitions" $ do
-    it "parse simple enum" $
+    it "simple enum" $
       parseEnums "enum Enum\n {\nUNKNOWN = 0;\n;;; RUNNING = -2;\n}"
         `shouldParse` [EnumDefinition "Enum" [] [EnumField "UNKNOWN" 0 [], EnumField "RUNNING" (negate 2) []]]
     it "parse enum with options (1/2)" $
@@ -140,6 +140,13 @@ testEnumDefinition =
     it "parse enum with value options" $
       parseEnums "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\", my_int=6];}"
         `shouldParse` [EnumDefinition "Enum" [] [EnumField "RUNNING" 2 [("custom_option", StringLit "foo"), ("my_int", IntLit 6)]]]
+    it "original order of enum fields and options is preserved" $
+      parseEnums "enum Enum\n {\nf1 = 0;\n;option o1 = bla;; f2 = 1; option o2 = true; f3=2; option o3=false;\n}"
+        `shouldParse` [ EnumDefinition
+                          "Enum"
+                          [("o1", Identifier "bla"), ("o2", BoolLit True), ("o3", BoolLit False)]
+                          [EnumField "f1" 0 [], EnumField "f2" 1 [], EnumField "f3" 2 []]
+                      ]
     it "fails if closing square bracket is missing" $
       run `shouldFailOn` addSyntaxStatement "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\";}"
     it "fails if no value options specified" $
