@@ -30,8 +30,8 @@ parseImports t = runMap importStmts (addSyntaxStatement t)
 parseOptions :: Text -> Either (ParseErrorBundle Text Void) [OptionDefinition]
 parseOptions t = runMap optionDefs (addSyntaxStatement t)
 
-parseEnums :: Text -> Either (ParseErrorBundle Text Void) [EnumDefinition]
-parseEnums t = runMap enumDefs (addSyntaxStatement t)
+parseTopLevelDefs :: Text -> Either (ParseErrorBundle Text Void) [TopLevelDefinition]
+parseTopLevelDefs t = runMap topLevelDefs (addSyntaxStatement t)
 
 testSyntaxDefinition :: SpecWith ()
 testSyntaxDefinition =
@@ -129,23 +129,24 @@ testEnumDefinition :: SpecWith ()
 testEnumDefinition =
   describe "[Parsing] Enum Definitions" $ do
     it "simple enum" $
-      parseEnums "enum Enum\n {\nUNKNOWN = 0;\n;;; RUNNING = -2;\n}"
-        `shouldParse` [EnumDefinition "Enum" [] [EnumField "UNKNOWN" 0 [], EnumField "RUNNING" (negate 2) []]]
+      parseTopLevelDefs "enum Enum\n {\nUNKNOWN = 0;\n;;; RUNNING = -2;\n}"
+        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] [EnumField "UNKNOWN" 0 [], EnumField "RUNNING" (negate 2) []]]
     it "parse enum with options (1/2)" $
-      parseEnums "enum Enum\n {option allow_alias = true\t;\n UNKNOWN = 0;}"
-        `shouldParse` [EnumDefinition "Enum" [("allow_alias", BoolLit True)] [EnumField "UNKNOWN" 0 []]]
+      parseTopLevelDefs "enum Enum\n {option allow_alias = true\t;\n UNKNOWN = 0;}"
+        `shouldParse` [EnumDef $ EnumDefinition "Enum" [("allow_alias", BoolLit True)] [EnumField "UNKNOWN" 0 []]]
     it "parse enum with options (2/2)" $
-      parseEnums "enum Enum\n {UNKNOWN = 0; option allow_alias=false;}"
-        `shouldParse` [EnumDefinition "Enum" [("allow_alias", BoolLit False)] [EnumField "UNKNOWN" 0 []]]
+      parseTopLevelDefs "enum Enum\n {UNKNOWN = 0; option allow_alias=false;}"
+        `shouldParse` [EnumDef $ EnumDefinition "Enum" [("allow_alias", BoolLit False)] [EnumField "UNKNOWN" 0 []]]
     it "parse enum with value options" $
-      parseEnums "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\", my_int=6];}"
-        `shouldParse` [EnumDefinition "Enum" [] [EnumField "RUNNING" 2 [("custom_option", StringLit "foo"), ("my_int", IntLit 6)]]]
+      parseTopLevelDefs "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\", my_int=6];}"
+        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] [EnumField "RUNNING" 2 [("custom_option", StringLit "foo"), ("my_int", IntLit 6)]]]
     it "original order of enum fields and options is preserved" $
-      parseEnums "enum Enum\n {\nf1 = 0;\n;option o1 = bla;; f2 = 1; option o2 = true; f3=2; option o3=false;\n}"
-        `shouldParse` [ EnumDefinition
-                          "Enum"
-                          [("o1", Identifier "bla"), ("o2", BoolLit True), ("o3", BoolLit False)]
-                          [EnumField "f1" 0 [], EnumField "f2" 1 [], EnumField "f3" 2 []]
+      parseTopLevelDefs "enum Enum\n {\nf1 = 0;\n;option o1 = bla;; f2 = 1; option o2 = true; f3=2; option o3=false;\n}"
+        `shouldParse` [ EnumDef $
+                          EnumDefinition
+                            "Enum"
+                            [("o1", Identifier "bla"), ("o2", BoolLit True), ("o3", BoolLit False)]
+                            [EnumField "f1" 0 [], EnumField "f2" 1 [], EnumField "f3" 2 []]
                       ]
     it "fails if closing square bracket is missing" $
       run `shouldFailOn` addSyntaxStatement "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\";}"

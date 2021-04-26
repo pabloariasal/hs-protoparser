@@ -156,21 +156,18 @@ parseEnumDefinition = do
 data TopLevelStatement
   = PackageSpec PackageSpecification
   | ImportStmt ImportStatement
-  | MessageDef Message
-  | EnumDef EnumDefinition
-  | ServiceDef Service
   | OptionDef OptionDefinition
+  | TopLevelDef TopLevelDefinition
   deriving (Eq, Show)
 
-partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageSpecification], [OptionDefinition], [EnumDefinition])
+partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageSpecification], [OptionDefinition], [TopLevelDefinition])
 partitionTopLevelStatements = foldr acc initVal
   where
     initVal = ([], [], [], [])
     acc (ImportStmt e) ~(im, pa, op, en) = (e : im, pa, op, en)
     acc (PackageSpec e) ~(im, pa, op, en) = (im, e : pa, op, en)
     acc (OptionDef e) ~(im, pa, op, en) = (im, pa, e : op, en)
-    acc (EnumDef e) ~(im, pa, op, en) = (im, pa, op, e : en)
-    acc _ ~(im, pa, op, en) = (im, pa, op, en)
+    acc (TopLevelDef e) ~(im, pa, op, en) = (im, pa, op, e : en)
 
 protoParser :: Parser ProtoFile
 protoParser = do
@@ -181,7 +178,7 @@ protoParser = do
         [ PackageSpec <$> try parsePackageSpecification,
           ImportStmt <$> try parseImportStatement,
           OptionDef <$> try parseOptionDefinition,
-          EnumDef <$> try parseEnumDefinition
+          TopLevelDef . EnumDef <$> try parseEnumDefinition
         ]
   _ <- eof
   let (im, pa, op, en) = partitionTopLevelStatements tls

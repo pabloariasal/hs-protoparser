@@ -1,5 +1,6 @@
 module HSProtoParser.Ast
   ( ProtoFile (..),
+    TopLevelDefinition (..),
     SyntaxStatement,
     PackageSpecification,
     OptionDefinition,
@@ -8,8 +9,8 @@ module HSProtoParser.Ast
     Constant (..),
     ImportStatement (..),
     AccessQualifier (..),
-    Message (..),
-    Service (..)
+    MessageDefinition (..),
+    ServiceDefinition (..),
   )
 where
 
@@ -29,7 +30,7 @@ data AccessQualifier = Public | Weak deriving (Eq, Show)
 
 data ImportStatement = ImportStatement (Maybe AccessQualifier) String deriving (Eq, Show)
 
-data Message = Message deriving (Eq, Show)
+data MessageDefinition = MessageDefinition deriving (Eq, Show)
 
 data EnumField = EnumField
   { identifier :: String,
@@ -45,15 +46,21 @@ data EnumDefinition = EnumDefinition
   }
   deriving (Eq, Show)
 
-data Service = Service deriving (Eq, Show)
+data ServiceDefinition = ServiceDefinition deriving (Eq, Show)
 
 type OptionDefinition = (String, Constant)
+
+data TopLevelDefinition
+  = MessageDef MessageDefinition
+  | EnumDef EnumDefinition
+  | ServiceDef ServiceDefinition
+  deriving (Show, Eq)
 
 data ProtoFile = ProtoFile
   { syntaxStmt :: SyntaxStatement,
     packageSpec :: [PackageSpecification],
     importStmts :: [ImportStatement],
     optionDefs :: [OptionDefinition],
-    enumDefs :: [EnumDefinition]
+    topLevelDefs :: [TopLevelDefinition]
   }
   deriving (Eq, Show)
