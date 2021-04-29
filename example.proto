@@ -15,3 +15,13 @@ enum MyEnum {
     option my_opt = foo.bar;
     V2 = 8;
 }
+;
+
+message M {
+    option o1 = "aka";
+
+    message N {
+        enum M { option j = "";}
+    }
+    ;
+}

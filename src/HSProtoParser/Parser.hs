@@ -150,8 +150,42 @@ parseEnumDefinition = do
   _ <- symbol "enum"
   n <- T.unpack <$> ident
   body <- between (symbol "{") (symbol "}") (many (Op <$> parseOptionDefinition <|> En <$> parseEnumField <|> Empty <$ symbol ";"))
+  _ <- many $ symbol ";"
   let (ops, efs) = partitionEnumBodyElements body
   return (EnumDefinition n ops efs)
+
+parseReservedStatement :: Parser ReservedStatement
+parseReservedStatement = undefined
+
+parseMapField :: Parser MapField
+parseMapField = undefined
+
+parseOneOfField :: Parser OneOfField
+parseOneOfField = undefined
+
+parseNormalField :: Parser NormalField
+parseNormalField = undefined
+
+parseMessageElements :: Parser [MessageElement]
+parseMessageElements =
+  many $
+    choice
+      [ -- NorF <$> try parseNormalField,
+        -- MapF <$> try parseMapField,
+        -- OneF <$> try parseOneOfField,
+        Msg <$> try parseMessageDefinition,
+        Enum <$> try parseEnumDefinition,
+        Opt <$> try parseOptionDefinition
+        -- Rsv <$> try parseReservedStatement
+      ]
+
+parseMessageDefinition :: Parser MessageDefinition
+parseMessageDefinition = do
+  _ <- symbol "message"
+  n <- T.unpack <$> ident
+  e <- between (symbol "{") (symbol "}") ([] <$ some (symbol ";") <|> parseMessageElements)
+  _ <- many $ symbol ";"
+  return $ MessageDefinition n e
 
 data TopLevelStatement
   = PackageSpec PackageSpecification
@@ -178,7 +212,8 @@ protoParser = do
         [ PackageSpec <$> try parsePackageSpecification,
           ImportStmt <$> try parseImportStatement,
           OptionDef <$> try parseOptionDefinition,
-          TopLevelDef . EnumDef <$> try parseEnumDefinition
+          TopLevelDef . EnumDef <$> try parseEnumDefinition,
+          TopLevelDef . MsgDef <$> try parseMessageDefinition
         ]
   _ <- eof
   let (im, pa, op, en) = partitionTopLevelStatements tls

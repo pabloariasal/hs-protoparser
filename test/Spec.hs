@@ -128,6 +128,12 @@ testOptionDefinition =
 testEnumDefinition :: SpecWith ()
 testEnumDefinition =
   describe "[Parsing] Enum Definitions" $ do
+    it "empty enum" $
+      parseTopLevelDefs "enum Enum\n {}"
+        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] []]
+    it "enum with just empty statements" $
+      parseTopLevelDefs "enum Enum\n {;;}"
+        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] []]
     it "simple enum" $
       parseTopLevelDefs "enum Enum\n {\nUNKNOWN = 0;\n;;; RUNNING = -2;\n}"
         `shouldParse` [EnumDef $ EnumDefinition "Enum" [] [EnumField "UNKNOWN" 0 [], EnumField "RUNNING" (negate 2) []]]
@@ -153,6 +159,68 @@ testEnumDefinition =
     it "fails if no value options specified" $
       run `shouldFailOn` addSyntaxStatement "enum Enum\n {RUNNING = 2 [];}"
 
+testEmptyMessage :: SpecWith ()
+testEmptyMessage =
+  describe "[Parsing] Empty Message Definitions" $ do
+    it "empty message" $
+      parseTopLevelDefs "message M {}"
+        `shouldParse` [MsgDef $ MessageDefinition "M" []]
+    it "empty message with empty statements" $
+      parseTopLevelDefs "message M {;\t;}"
+        `shouldParse` [MsgDef $ MessageDefinition "M" []]
+    it "fails if no closing } is found" $
+      run `shouldFailOn` addSyntaxStatement "message M {"
+    it "fails if no name is provided" $
+      run `shouldFailOn` addSyntaxStatement "message {"
+
+testMessageWithOptions :: SpecWith ()
+testMessageWithOptions =
+  describe "[Parsing] Messages with Options" $ do
+    it "message with two options" $
+      parseTopLevelDefs "message M { option (my_option).a = 42;;; option b = false;; }"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [Opt ("my_option.a", IntLit 42), Opt ("b", BoolLit False)]
+                      ]
+    it "fails if option is not correct" $
+      run `shouldFailOn` addSyntaxStatement "message M { option my_option = 42 }"
+
+testMessageWithEnums :: SpecWith ()
+testMessageWithEnums =
+  describe "[Parsing] Messages with Enums" $ do
+    it "message with single enums" $
+      parseTopLevelDefs "message M { enum Enum\n {\nA = 0;\n; B = 1;}}"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [Enum $ EnumDefinition "Enum" [] [EnumField "A" 0 [], EnumField "B" 1 []]]
+                      ]
+    it "message with two enums and one opt" $
+      parseTopLevelDefs "message M { enum E1 {A = 0;};\t; option o = foo;  enum E2 {}}"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [ Enum $ EnumDefinition "E1" [] [EnumField "A" 0 []],
+                              Opt ("o", Identifier "foo"),
+                              Enum $ EnumDefinition "E2" [] []
+                            ]
+                      ]
+    it "fails if option is not correct" $
+      run `shouldFailOn` addSyntaxStatement "message M { enum Enum {}"
+
+testNestedMessages :: SpecWith ()
+testNestedMessages =
+  describe "[Parsing] Nested Message Definitions" $ do
+    it "message inside message" $
+      parseTopLevelDefs "message Outer { message Inner {} }"
+        `shouldParse` [MsgDef $ MessageDefinition "Outer" [Msg $ MessageDefinition "Inner" []]]
+    it "multiple nested messages" $
+      parseTopLevelDefs "message O1 { message Inner{} ;} \n; message O2{}"
+        `shouldParse` [ MsgDef (MessageDefinition "O1" [Msg $ MessageDefinition "Inner" []]),
+                        MsgDef (MessageDefinition "O2" [])
+                      ]
+
 main :: IO ()
 main = hspec $ do
   testSyntaxDefinition
@@ -161,3 +229,7 @@ main = hspec $ do
   testEmptyStatement
   testOptionDefinition
   testEnumDefinition
+  testEmptyMessage
+  testMessageWithOptions
+  testMessageWithEnums
+  testNestedMessages

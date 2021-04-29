@@ -1,3 +1,5 @@
+{-# LANGUAGE DuplicateRecordFields #-}
+
 module HSProtoParser.Ast
   ( ProtoFile (..),
     TopLevelDefinition (..),
@@ -10,6 +12,11 @@ module HSProtoParser.Ast
     ImportStatement (..),
     AccessQualifier (..),
     MessageDefinition (..),
+    MessageElement (..),
+    NormalField (..),
+    OneOfField (..),
+    MapField (..),
+    ReservedStatement (..),
     ServiceDefinition (..),
   )
 where
@@ -30,7 +37,29 @@ data AccessQualifier = Public | Weak deriving (Eq, Show)
 
 data ImportStatement = ImportStatement (Maybe AccessQualifier) String deriving (Eq, Show)
 
-data MessageDefinition = MessageDefinition deriving (Eq, Show)
+data OneOfField = OneOfField deriving (Eq, Show)
+
+data MapField = MapField deriving (Eq, Show)
+
+data NormalField = NormalField deriving (Eq, Show)
+
+data ReservedStatement = ReservedStatement deriving (Eq, Show)
+
+data MessageElement
+  = OneF OneOfField
+  | MapF MapField
+  | NorF NormalField
+  | Msg MessageDefinition
+  | Enum EnumDefinition
+  | Opt OptionDefinition
+  | Rsv ReservedStatement
+  deriving (Eq, Show)
+
+data MessageDefinition = MessageDefinition
+  { name :: String,
+    elements :: [MessageElement]
+  }
+  deriving (Eq, Show)
 
 data EnumField = EnumField
   { identifier :: String,
@@ -51,7 +80,7 @@ data ServiceDefinition = ServiceDefinition deriving (Eq, Show)
 type OptionDefinition = (String, Constant)
 
 data TopLevelDefinition
-  = MessageDef MessageDefinition
+  = MsgDef MessageDefinition
   | EnumDef EnumDefinition
   | ServiceDef ServiceDefinition
   deriving (Show, Eq)
