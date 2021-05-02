@@ -100,11 +100,11 @@ testOptionDefinition =
         `shouldParse` [("java_package", Identifier "foo.bar")]
     it "int literals" $
       parseOptions "option num1 = -5;option num2=+42;option num3=666;"
-        `shouldParse` [("num1", IntLit (negate 5)), ("num2", IntLit 42), ("num3", IntLit 666)]
+        `shouldParse` [("num1", IntLit (-5)), ("num2", IntLit 42), ("num3", IntLit 666)]
     it "float literals" $
       parseOptions "option n1=+4.4;option n2 = -1e5;option n3=+10.0E-1;option n4=666;"
         `shouldParse` [ ("n1", FloatLit 4.4),
-                        ("n2", FloatLit (negate 100000)),
+                        ("n2", FloatLit (-100000)),
                         ("n3", FloatLit 1.0),
                         ("n4", IntLit 666)
                       ]
@@ -113,7 +113,7 @@ testOptionDefinition =
         `shouldParse` [("b1", BoolLit False), ("b2", BoolLit True)]
     it "combined" $
       parseOptions "option fl=-4.4;option id = foo;option il=42;option sl=\"666\";option bl=false;"
-        `shouldParse` [ ("fl", FloatLit (negate 4.4)),
+        `shouldParse` [ ("fl", FloatLit (-4.4)),
                         ("id", Identifier "foo"),
                         ("il", IntLit 42),
                         ("sl", StringLit "666"),
@@ -136,7 +136,7 @@ testEnumDefinition =
         `shouldParse` [EnumDef $ EnumDefinition "Enum" [] []]
     it "simple enum" $
       parseTopLevelDefs "enum Enum\n {\nUNKNOWN = 0;\n;;; RUNNING = -2;\n}"
-        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] [EnumField "UNKNOWN" 0 [], EnumField "RUNNING" (negate 2) []]]
+        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] [EnumField "UNKNOWN" 0 [], EnumField "RUNNING" (-2) []]]
     it "parse enum with options (1/2)" $
       parseTopLevelDefs "enum Enum\n {option allow_alias = true\t;\n UNKNOWN = 0;}"
         `shouldParse` [EnumDef $ EnumDefinition "Enum" [("allow_alias", BoolLit True)] [EnumField "UNKNOWN" 0 []]]
