@@ -105,11 +105,12 @@ parseConstant =
     ]
 
 parseOptionName :: Parser Text
-parseOptionName = T.append <$> (simple <|> surrounded) <*> (T.concat <$> many suffix)
+parseOptionName = T.append <$> (try simple <|> surrounded) <*> (T.concat <$> many suffix)
   where
     simple = ident
-    surrounded = between (symbol "(") (symbol ")") parseFullIdent
+    surrounded = T.concat <$> (createTripleList <$> symbol "(" <*> parseFullIdent <*> symbol ")")
     suffix = T.append <$> (T.singleton <$> char '.') <*> ident
+    createTripleList a b c = [a, b, c]
 
 parseOptionDefinition :: Parser OptionDefinition
 parseOptionDefinition = do

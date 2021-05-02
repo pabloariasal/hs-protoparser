@@ -120,8 +120,10 @@ testOptionDefinition =
                         ("bl", BoolLit False)
                       ]
     it "parentherized option name" $
-      parseOptions "option (custom_option).foo.bar = false;"
-        `shouldParse` [("custom_option.foo.bar", BoolLit False)]
+      parseOptions "option (  custom_option\n).foo.bar = false;"
+        `shouldParse` [("(custom_option).foo.bar", BoolLit False)]
+    it "fails if parenthesis is not on first identifier" $
+      run `shouldFailOn` addSyntaxStatement "option foo.(a) = false;"
     it "fails if closing parenthesis is missing" $
       run `shouldFailOn` addSyntaxStatement "option (a = false;"
 
@@ -145,7 +147,7 @@ testEnumDefinition =
         `shouldParse` [EnumDef $ EnumDefinition "Enum" [("allow_alias", BoolLit False)] [EnumField "UNKNOWN" 0 []]]
     it "parse enum with value options" $
       parseTopLevelDefs "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\", my_int=6];}"
-        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] [EnumField "RUNNING" 2 [("custom_option", StringLit "foo"), ("my_int", IntLit 6)]]]
+        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] [EnumField "RUNNING" 2 [("(custom_option)", StringLit "foo"), ("my_int", IntLit 6)]]]
     it "original order of enum fields and options is preserved" $
       parseTopLevelDefs "enum Enum\n {\nf1 = 0;\n;option o1 = bla;; f2 = 1; option o2 = true; f3=2; option o3=false;\n}"
         `shouldParse` [ EnumDef $
@@ -281,7 +283,7 @@ testMessageWithOptions =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [Opt ("my_option.a", IntLit 42), Opt ("b", BoolLit False)]
+                            [Opt ("(my_option).a", IntLit 42), Opt ("b", BoolLit False)]
                       ]
     it "fails if option is not correct" $
       run `shouldFailOn` addSyntaxStatement "message M { option my_option = 42 }"
