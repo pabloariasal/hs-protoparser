@@ -181,8 +181,8 @@ testMessageWithNormalFields =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ NorF $ NormalField "nested_message" (FTMessageType "foo.Bar") 2 [] False,
-                              NorF $ NormalField "samples" FTInt32 4 [] True
+                            [ NorF $ NormalField (FieldDefinition "nested_message" (FTMessageType "foo.Bar") 2 []) False,
+                              NorF $ NormalField (FieldDefinition "samples" FTInt32 4 []) True
                             ]
                       ]
     it "message with normal field with options" $
@@ -190,8 +190,8 @@ testMessageWithNormalFields =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ NorF $ NormalField "foo" FTSInt32 4 [("o1", BoolLit True), ("o2", FloatLit (-5.0))] False,
-                              NorF $ NormalField "bar" FTString 1 [("o3", IntLit (-9))] False
+                            [ NorF $ NormalField (FieldDefinition "foo" FTSInt32 4 [("o1", BoolLit True), ("o2", FloatLit (-5.0))]) False,
+                              NorF $ NormalField (FieldDefinition "bar" FTString 1 [("o3", IntLit (-9))]) False
                             ]
                       ]
     it "fails if semicolon missing" $

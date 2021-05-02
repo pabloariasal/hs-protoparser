@@ -188,16 +188,21 @@ parseFieldType =
       try $ FTMessageType . T.unpack <$> parseFullIdent
     ]
 
-parseNormalField :: Parser NormalField
-parseNormalField = do
-  r <- optional . try $ symbol "repeated"
+parseFieldDefinition :: Parser FieldDefinition
+parseFieldDefinition = do
   t <- parseFieldType
   fieldName <- T.unpack <$> ident
   _ <- symbol "="
   number <- integer
   opts <- parseFieldOptions
   _ <- some $ symbol ";"
-  return $ NormalField fieldName t number opts (isJust r)
+  return $ FieldDefinition fieldName t number opts
+
+parseNormalField :: Parser NormalField
+parseNormalField = do
+  r <- optional . try $ symbol "repeated"
+  f <- parseFieldDefinition
+  return $ NormalField f (isJust r)
 
 parseMessageElements :: Parser [MessageElement]
 parseMessageElements =

@@ -20,7 +20,20 @@ data AccessQualifier = Public | Weak deriving (Eq, Show)
 
 data ImportStatement = ImportStatement (Maybe AccessQualifier) String deriving (Eq, Show)
 
-data OneOfField = OneOfField deriving (Eq, Show)
+data FieldDefinition = FieldDefinition
+  { name :: String,
+    fieldType :: FieldType,
+    fieldNumber :: Int,
+    options :: [OptionDefinition]
+  }
+  deriving (Eq, Show)
+
+data OneOfField = OneOfField
+  { name :: String,
+    fields :: [FieldDefinition],
+    options :: [OptionDefinition]
+  }
+  deriving (Eq, Show)
 
 data MapField = MapField deriving (Eq, Show)
 
@@ -44,10 +57,7 @@ data FieldType
   deriving (Eq, Show)
 
 data NormalField = NormalField
-  { name :: String,
-    fieldType :: FieldType,
-    fieldNumber :: Int,
-    options :: [OptionDefinition],
+  { field :: FieldDefinition,
     repeated :: Bool
   }
   deriving (Eq, Show)
