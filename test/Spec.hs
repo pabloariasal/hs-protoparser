@@ -173,6 +173,38 @@ testEmptyMessage =
     it "fails if no name is provided" $
       run `shouldFailOn` addSyntaxStatement "message {"
 
+testMessageWithNormalFields :: SpecWith ()
+testMessageWithNormalFields =
+  describe "[Parsing] Messages with normal fields" $ do
+    it "message with two normal field" $
+      parseTopLevelDefs "message M { foo.Bar nested_message = 2;; repeated int32 samples = 4; }"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [ NorF $ NormalField "nested_message" (FTMessageType "foo.Bar") 2 [] False,
+                              NorF $ NormalField "samples" FTInt32 4 [] True
+                            ]
+                      ]
+    it "message with normal field with options" $
+      parseTopLevelDefs "message M { sint32 foo = 4 [o1=true,o2=-5.0];\n; string bar = 1 [o3=-9];; }"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [ NorF $ NormalField "foo" FTSInt32 4 [("o1", BoolLit True), ("o2", FloatLit (-5.0))] False,
+                              NorF $ NormalField "bar" FTString 1 [("o3", IntLit (-9))] False
+                            ]
+                      ]
+    it "fails if semicolon missing" $
+      run `shouldFailOn` addSyntaxStatement "message M { bool my_option = true }"
+    it "fails if repeated is misspelled" $
+      run `shouldFailOn` addSyntaxStatement "message M { Repeated fixed64 my_option = 67; }"
+    it "fails if message name starts with number" $
+      run `shouldFailOn` addSyntaxStatement "message M { fixed32 0my_option = 67; }"
+    it "fails if '=' missing" $
+      run `shouldFailOn` addSyntaxStatement "message M { double my_option 67; }"
+    it "fails if ';' missing" $
+      run `shouldFailOn` addSyntaxStatement "message M { sint64 my_option = 67 }"
+
 testMessageWithOptions :: SpecWith ()
 testMessageWithOptions =
   describe "[Parsing] Messages with Options" $ do
@@ -230,6 +262,7 @@ main = hspec $ do
   testOptionDefinition
   testEnumDefinition
   testEmptyMessage
+  testMessageWithNormalFields
   testMessageWithOptions
   testMessageWithEnums
   testNestedMessages

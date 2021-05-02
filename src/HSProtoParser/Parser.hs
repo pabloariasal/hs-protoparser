@@ -7,6 +7,7 @@ module HSProtoParser.Parser
   )
 where
 
+import Data.Maybe (isJust)
 import Data.Scientific (toRealFloat)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -121,19 +122,22 @@ parseOptionDefinition = do
 
 data EnumBodyElement = En EnumField | Op OptionDefinition | Empty
 
-parseEnumValueOption :: Parser OptionDefinition
-parseEnumValueOption = do
+parseFieldOption :: Parser OptionDefinition
+parseFieldOption = do
   n <- T.unpack <$> parseOptionName
   _ <- symbol "="
   k <- parseConstant
   return (n, k)
+
+parseFieldOptions :: Parser [OptionDefinition]
+parseFieldOptions = between (symbol "[") (symbol "]") (parseFieldOption `sepBy1` symbol ",") <|> [] <$ lookAhead (symbol ";")
 
 parseEnumField :: Parser EnumField
 parseEnumField = do
   n <- T.unpack <$> ident
   _ <- symbol "="
   v <- signedInteger
-  o <- between (symbol "[") (symbol "]") (parseEnumValueOption `sepBy1` symbol ",") <|> [] <$ lookAhead (symbol ";")
+  o <- parseFieldOptions
   _ <- some $ symbol ";"
   return (EnumField n v o)
 
@@ -163,14 +167,43 @@ parseMapField = undefined
 parseOneOfField :: Parser OneOfField
 parseOneOfField = undefined
 
+parseFieldType :: Parser FieldType
+parseFieldType =
+  choice
+    [ try $ FTDouble <$ symbol "double",
+      try $ FTFloat <$ symbol "float",
+      try $ FTInt32 <$ symbol "int32",
+      try $ FTInt64 <$ symbol "int64",
+      try $ FTUInt32 <$ symbol "uint32",
+      try $ FTUInt64 <$ symbol "uint64",
+      try $ FTSInt32 <$ symbol "sint32",
+      try $ FTSInt64 <$ symbol "sint64",
+      try $ FTFixed32 <$ symbol "fixed32",
+      try $ FTFixed64 <$ symbol "fixed64",
+      try $ FTSfixed32 <$ symbol "sfixed32",
+      try $ FTSfixed64 <$ symbol "sfixed64",
+      try $ FTBool <$ symbol "bool",
+      try $ FTString <$ symbol "string",
+      try $ FTBytes <$ symbol "bytes",
+      try $ FTMessageType . T.unpack <$> parseFullIdent
+    ]
+
 parseNormalField :: Parser NormalField
-parseNormalField = undefined
+parseNormalField = do
+  r <- optional . try $ symbol "repeated"
+  t <- parseFieldType
+  fieldName <- T.unpack <$> ident
+  _ <- symbol "="
+  number <- integer
+  opts <- parseFieldOptions
+  _ <- some $ symbol ";"
+  return $ NormalField fieldName t number opts (isJust r)
 
 parseMessageElements :: Parser [MessageElement]
 parseMessageElements =
   many $
     choice
-      [ -- NorF <$> try parseNormalField,
+      [ NorF <$> try parseNormalField,
         -- MapF <$> try parseMapField,
         -- OneF <$> try parseOneOfField,
         Msg <$> try parseMessageDefinition,

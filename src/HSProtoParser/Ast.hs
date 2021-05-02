@@ -23,7 +23,34 @@ data OneOfField = OneOfField deriving (Eq, Show)
 
 data MapField = MapField deriving (Eq, Show)
 
-data NormalField = NormalField deriving (Eq, Show)
+data FieldType
+  = FTDouble
+  | FTFloat
+  | FTInt32
+  | FTInt64
+  | FTUInt32
+  | FTUInt64
+  | FTSInt32
+  | FTSInt64
+  | FTFixed32
+  | FTFixed64
+  | FTSfixed32
+  | FTSfixed64
+  | FTBool
+  | FTString
+  | FTBytes
+  | FTMessageType String
+  deriving (Eq, Show)
+
+data NormalField = NormalField
+  {
+    name :: String,
+    fieldType :: FieldType,
+    fieldNumber :: Int,
+    options :: [OptionDefinition],
+    repeated :: Bool
+  }
+  deriving (Eq, Show)
 
 data ReservedStatement = ReservedStatement deriving (Eq, Show)
 
