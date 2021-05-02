@@ -181,16 +181,16 @@ parseKeyType =
 parseMapFieldTypes :: Parser (KeyType, FieldType)
 parseMapFieldTypes = between (symbol "<") (symbol ">") ((,) <$> parseKeyType <*> (symbol "," *> parseFieldType))
 
+parseFieldInfo :: Parser (String, Int, [OptionDefinition])
+parseFieldInfo = (,,) <$> (T.unpack <$> ident) <*> (symbol "=" *> integer) <*> parseFieldOptions
+
 parseMapField :: Parser MapField
 parseMapField = do
   _ <- symbol "map"
   (kt, vt) <- parseMapFieldTypes
-  fieldName <- T.unpack <$> ident
-  _ <- symbol "="
-  fieldNum <- integer
-  opts <- parseFieldOptions
+  (fieldName, num, opts) <- parseFieldInfo
   _ <- some $ symbol ";"
-  return $ MapField fieldName kt vt fieldNum opts
+  return $ MapField fieldName kt vt num opts
 
 parseOneOfElements :: Parser [OneOfFieldElement]
 parseOneOfElements = many (OFFieldDef <$> try parseFieldDefinition <|> OFOptDef <$> parseOptionDefinition)
@@ -227,12 +227,9 @@ parseFieldType =
 parseFieldDefinition :: Parser FieldDefinition
 parseFieldDefinition = do
   t <- parseFieldType
-  fieldName <- T.unpack <$> ident
-  _ <- symbol "="
-  number <- integer
-  opts <- parseFieldOptions
+  (fieldName, num, opts) <- parseFieldInfo
   _ <- some $ symbol ";"
-  return $ FieldDefinition fieldName t number opts
+  return $ FieldDefinition fieldName t num opts
 
 parseNormalField :: Parser NormalField
 parseNormalField = do
