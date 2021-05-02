@@ -1,25 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# OPTIONS -Wno-missing-export-lists #-}
 
-module HSProtoParser.Ast
-  ( ProtoFile (..),
-    TopLevelDefinition (..),
-    SyntaxStatement,
-    PackageSpecification,
-    OptionDefinition,
-    EnumDefinition (..),
-    EnumField (..),
-    Constant (..),
-    ImportStatement (..),
-    AccessQualifier (..),
-    MessageDefinition (..),
-    MessageElement (..),
-    NormalField (..),
-    OneOfField (..),
-    MapField (..),
-    ReservedStatement (..),
-    ServiceDefinition (..),
-  )
-where
+module HSProtoParser.Ast where
 
 type PackageSpecification = String
 
