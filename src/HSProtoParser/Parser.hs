@@ -161,8 +161,36 @@ parseEnumDefinition = do
 parseReservedStatement :: Parser ReservedStatement
 parseReservedStatement = undefined
 
+parseKeyType :: Parser KeyType
+parseKeyType =
+  choice
+    [ try $ KTInt32 <$ symbol "int32",
+      try $ KTInt64 <$ symbol "int64",
+      try $ KTUInt32 <$ symbol "uint32",
+      try $ KTUInt64 <$ symbol "uint64",
+      try $ KTSInt32 <$ symbol "sint32",
+      try $ KTSInt64 <$ symbol "sint64",
+      try $ KTFixed32 <$ symbol "fixed32",
+      try $ KTFixed64 <$ symbol "fixed64",
+      try $ KTSfixed32 <$ symbol "sfixed32",
+      try $ KTSfixed64 <$ symbol "sfixed64",
+      try $ KTBool <$ symbol "bool",
+      try $ KTString <$ symbol "string"
+    ]
+
+parseMapFieldTypes :: Parser (KeyType, FieldType)
+parseMapFieldTypes = between (symbol "<") (symbol ">") ((,) <$> parseKeyType <*> (symbol "," *> parseFieldType))
+
 parseMapField :: Parser MapField
-parseMapField = undefined
+parseMapField = do
+  _ <- symbol "map"
+  (kt, vt) <- parseMapFieldTypes
+  fieldName <- T.unpack <$> ident
+  _ <- symbol "="
+  fieldNum <- integer
+  opts <- parseFieldOptions
+  _ <- some $ symbol ";"
+  return $ MapField fieldName kt vt fieldNum opts
 
 parseOneOfElements :: Parser [OneOfFieldElement]
 parseOneOfElements = many (OFFieldDef <$> try parseFieldDefinition <|> OFOptDef <$> parseOptionDefinition)
@@ -217,7 +245,7 @@ parseMessageElements =
   many $
     choice
       [ NorF <$> try parseNormalField,
-        -- MapF <$> try parseMapField,
+        MapF <$> try parseMapField,
         OneF <$> try parseOneOfField,
         Msg <$> try parseMessageDefinition,
         Enum <$> try parseEnumDefinition,

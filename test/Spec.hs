@@ -204,6 +204,8 @@ testMessageWithNormalFields =
       run `shouldFailOn` addSyntaxStatement "message M { double my_option 67; }"
     it "fails if ';' missing" $
       run `shouldFailOn` addSyntaxStatement "message M { sint64 my_option = 67 }"
+    it "fails if option number is negative" $
+      run `shouldFailOn` addSyntaxStatement "message M { sint64 my_option = -67; }"
 
 testMessageWithOneOfFields :: SpecWith ()
 testMessageWithOneOfFields =
@@ -284,6 +286,32 @@ testMessageWithOptions =
     it "fails if option is not correct" $
       run `shouldFailOn` addSyntaxStatement "message M { option my_option = 42 }"
 
+testMessageWithMapFields :: SpecWith ()
+testMessageWithMapFields =
+  describe "[Parsing] Messages with map fields" $ do
+    it "message with simple map field" $
+      parseTopLevelDefs "message M { map< string , Project > projects\n =   3; }"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [MapF $ MapField "projects" KTString (FTMessageType "Project") 3 []]
+                      ]
+    it "message with options" $
+      parseTopLevelDefs "message M { map<bool, bool> projects = 3 [o1=42,o2=false]; }"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [MapF $ MapField "projects" KTBool FTBool 3 [("o1", IntLit 42), ("o2", BoolLit False)]]
+                      ]
+    it "fails if ',' is missing" $
+      run `shouldFailOn` addSyntaxStatement "message M { map< string  Project > projects\n =   3; }"
+    it "fails if '<' is missing" $
+      run `shouldFailOn` addSyntaxStatement "message M { map string,  Project > projects\n =   3; }"
+    it "fails if '>' is missing" $
+      run `shouldFailOn` addSyntaxStatement "message M { map <string,  Project  projects\n =   3; }"
+    it "fails if ';' is missing" $
+      run `shouldFailOn` addSyntaxStatement "message M { map <string,  Project>  projects\n =   3 }"
+
 testMessageWithEnums :: SpecWith ()
 testMessageWithEnums =
   describe "[Parsing] Messages with Enums" $ do
@@ -333,3 +361,4 @@ main = hspec $ do
   testMessageWithEnums
   testNestedMessages
   testMessageWithOneOfFields
+  testMessageWithMapFields

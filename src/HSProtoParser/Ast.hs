@@ -20,24 +20,6 @@ data AccessQualifier = Public | Weak deriving (Eq, Show)
 
 data ImportStatement = ImportStatement (Maybe AccessQualifier) String deriving (Eq, Show)
 
-data FieldDefinition = FieldDefinition
-  { name :: String,
-    fieldType :: FieldType,
-    fieldNumber :: Int,
-    options :: [OptionDefinition]
-  }
-  deriving (Eq, Show)
-
-data OneOfFieldElement = OFFieldDef FieldDefinition | OFOptDef OptionDefinition deriving (Eq, Show)
-
-data OneOfField = OneOfField
-  { name :: String,
-    elements :: [OneOfFieldElement]
-  }
-  deriving (Eq, Show)
-
-data MapField = MapField deriving (Eq, Show)
-
 data FieldType
   = FTDouble
   | FTFloat
@@ -55,6 +37,46 @@ data FieldType
   | FTString
   | FTBytes
   | FTMessageType String
+  deriving (Eq, Show)
+
+data FieldDefinition = FieldDefinition
+  { name :: String,
+    fieldType :: FieldType,
+    fieldNumber :: Int,
+    options :: [OptionDefinition]
+  }
+  deriving (Eq, Show)
+
+data OneOfFieldElement = OFFieldDef FieldDefinition | OFOptDef OptionDefinition deriving (Eq, Show)
+
+data OneOfField = OneOfField
+  { name :: String,
+    elements :: [OneOfFieldElement]
+  }
+  deriving (Eq, Show)
+
+data KeyType
+  = KTInt32
+  | KTInt64
+  | KTUInt32
+  | KTUInt64
+  | KTSInt32
+  | KTSInt64
+  | KTFixed32
+  | KTFixed64
+  | KTSfixed32
+  | KTSfixed64
+  | KTBool
+  | KTString
+  deriving (Eq, Show)
+
+data MapField = MapField
+  { name :: String,
+    keyType :: KeyType,
+    valueType :: FieldType,
+    fieldNumber :: Int,
+    options :: [OptionDefinition]
+  }
   deriving (Eq, Show)
 
 data NormalField = NormalField
