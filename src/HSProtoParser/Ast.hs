@@ -28,10 +28,11 @@ data FieldDefinition = FieldDefinition
   }
   deriving (Eq, Show)
 
+data OneOfFieldElement = OFFieldDef FieldDefinition | OFOptDef OptionDefinition deriving (Eq, Show)
+
 data OneOfField = OneOfField
   { name :: String,
-    fields :: [FieldDefinition],
-    options :: [OptionDefinition]
+    elements :: [OneOfFieldElement]
   }
   deriving (Eq, Show)
 

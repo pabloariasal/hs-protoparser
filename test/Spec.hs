@@ -205,6 +205,72 @@ testMessageWithNormalFields =
     it "fails if ';' missing" $
       run `shouldFailOn` addSyntaxStatement "message M { sint64 my_option = 67 }"
 
+testMessageWithOneOfFields :: SpecWith ()
+testMessageWithOneOfFields =
+  describe "[Parsing] Messages with oneof fields" $ do
+    it "message with empty oneof field" $
+      parseTopLevelDefs "message M {\toneof foo\n {}}"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [ OneF $ OneOfField "foo" []
+                            ]
+                      ]
+    it "message with oneof field with only empty statements" $
+      parseTopLevelDefs "message M {\toneof foo\n {;;}}"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [ OneF $ OneOfField "foo" []
+                            ]
+                      ]
+    it "message with oneof and two simple fields" $
+      parseTopLevelDefs "message M {\toneof foo\n {string name = 4;;; bytes b = 5;}}"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [ OneF $
+                                OneOfField
+                                  "foo"
+                                  [ OFFieldDef (FieldDefinition "name" FTString 4 []),
+                                    OFFieldDef (FieldDefinition "b" FTBytes 5 [])
+                                  ]
+                            ]
+                      ]
+    it "message with oneof field with and option and a field" $
+      parseTopLevelDefs "message M {\toneof foo\n {sfixed32 b = 5; option opt = 'value'; }}"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [ OneF $
+                                OneOfField
+                                  "foo"
+                                  [ OFFieldDef (FieldDefinition "b" FTSfixed32 5 []),
+                                    OFOptDef ("opt", StringLit "value")
+                                  ]
+                            ]
+                      ]
+    it "message with oneof with field with options" $
+      parseTopLevelDefs "message M {\toneof foo\n {string name = 4[o1=true,o2=-5.0];;;}}"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [ OneF $
+                                OneOfField
+                                  "foo"
+                                  [ OFFieldDef
+                                      ( FieldDefinition
+                                          "name"
+                                          FTString
+                                          4
+                                          [("o1", BoolLit True), ("o2", FloatLit (-5.0))]
+                                      )
+                                  ]
+                            ]
+                      ]
+    it "fails if field is repeated" $
+      run `shouldFailOn` addSyntaxStatement "message M {oneof foo {repeated string name = 4;}}"
+
 testMessageWithOptions :: SpecWith ()
 testMessageWithOptions =
   describe "[Parsing] Messages with Options" $ do
@@ -266,3 +332,4 @@ main = hspec $ do
   testMessageWithOptions
   testMessageWithEnums
   testNestedMessages
+  testMessageWithOneOfFields

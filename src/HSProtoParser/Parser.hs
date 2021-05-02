@@ -164,8 +164,16 @@ parseReservedStatement = undefined
 parseMapField :: Parser MapField
 parseMapField = undefined
 
+parseOneOfElements :: Parser [OneOfFieldElement]
+parseOneOfElements = many (OFFieldDef <$> try parseFieldDefinition <|> OFOptDef <$> parseOptionDefinition)
+
 parseOneOfField :: Parser OneOfField
-parseOneOfField = undefined
+parseOneOfField = do
+  _ <- symbol "oneof"
+  n <- T.unpack <$> ident
+  e <- between (symbol "{") (symbol "}") ([] <$ some (symbol ";") <|> parseOneOfElements)
+  _ <- many $ symbol ";"
+  return $ OneOfField n e
 
 parseFieldType :: Parser FieldType
 parseFieldType =
@@ -210,7 +218,7 @@ parseMessageElements =
     choice
       [ NorF <$> try parseNormalField,
         -- MapF <$> try parseMapField,
-        -- OneF <$> try parseOneOfField,
+        OneF <$> try parseOneOfField,
         Msg <$> try parseMessageDefinition,
         Enum <$> try parseEnumDefinition,
         Opt <$> try parseOptionDefinition
