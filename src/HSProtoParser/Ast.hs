@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+
 {-# OPTIONS -Wno-missing-export-lists #-}
 
 module HSProtoParser.Ast where
@@ -43,8 +44,7 @@ data FieldType
   deriving (Eq, Show)
 
 data NormalField = NormalField
-  {
-    name :: String,
+  { name :: String,
     fieldType :: FieldType,
     fieldNumber :: Int,
     options :: [OptionDefinition],
