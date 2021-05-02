@@ -103,6 +103,8 @@ data MessageDefinition = MessageDefinition
   }
   deriving (Eq, Show)
 
+data EnumElement = EnOpt OptionDefinition | EnField EnumField deriving (Eq, Show)
+
 data EnumField = EnumField
   { identifier :: String,
     value :: Int,
@@ -112,8 +114,7 @@ data EnumField = EnumField
 
 data EnumDefinition = EnumDefinition
   { name :: String,
-    options :: [OptionDefinition],
-    fields :: [EnumField]
+    elements :: [EnumElement]
   }
   deriving (Eq, Show)
 

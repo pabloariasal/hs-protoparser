@@ -121,8 +121,6 @@ parseOptionDefinition = do
   _ <- some $ symbol ";"
   return (T.unpack k, v)
 
-data EnumBodyElement = En EnumField | Op OptionDefinition | Empty
-
 parseFieldOption :: Parser OptionDefinition
 parseFieldOption = do
   n <- T.unpack <$> parseOptionName
@@ -142,22 +140,16 @@ parseEnumField = do
   _ <- some $ symbol ";"
   return (EnumField n v o)
 
-partitionEnumBodyElements :: [EnumBodyElement] -> ([OptionDefinition], [EnumField])
-partitionEnumBodyElements = foldr acc initVal
-  where
-    initVal = ([], [])
-    acc (Op e) ~(op, ef) = (e : op, ef)
-    acc (En e) ~(op, ef) = (op, e : ef)
-    acc Empty ~(op, ef) = (op, ef)
+parseEnumElements :: Parser [EnumElement]
+parseEnumElements = ([] <$ some (symbol ";")) <|> many (EnOpt <$> parseOptionDefinition <|> EnField <$> parseEnumField)
 
 parseEnumDefinition :: Parser EnumDefinition
 parseEnumDefinition = do
   _ <- symbol "enum"
   n <- T.unpack <$> ident
-  body <- between (symbol "{") (symbol "}") (many (Op <$> parseOptionDefinition <|> En <$> parseEnumField <|> Empty <$ symbol ";"))
+  e <- between (symbol "{") (symbol "}") parseEnumElements
   _ <- many $ symbol ";"
-  let (ops, efs) = partitionEnumBodyElements body
-  return (EnumDefinition n ops efs)
+  return (EnumDefinition n e)
 
 parseReservedStatement :: Parser ReservedStatement
 parseReservedStatement = undefined
@@ -194,13 +186,13 @@ parseMapField = do
   return $ MapField fieldName kt vt num opts
 
 parseOneOfElements :: Parser [OneOfFieldElement]
-parseOneOfElements = many (OFFieldDef <$> try parseFieldDefinition <|> OFOptDef <$> parseOptionDefinition)
+parseOneOfElements = [] <$ some (symbol ";") <|> many (OFFieldDef <$> try parseFieldDefinition <|> OFOptDef <$> parseOptionDefinition)
 
 parseOneOfField :: Parser OneOfField
 parseOneOfField = do
   _ <- symbol "oneof"
   n <- T.unpack <$> ident
-  e <- between (symbol "{") (symbol "}") ([] <$ some (symbol ";") <|> parseOneOfElements)
+  e <- between (symbol "{") (symbol "}") parseOneOfElements
   _ <- many $ symbol ";"
   return $ OneOfField n e
 
@@ -240,22 +232,24 @@ parseNormalField = do
 
 parseMessageElements :: Parser [MessageElement]
 parseMessageElements =
-  many $
-    choice
-      [ NorF <$> try parseNormalField,
-        MapF <$> try parseMapField,
-        OneF <$> try parseOneOfField,
-        Msg <$> try parseMessageDefinition,
-        Enum <$> try parseEnumDefinition,
-        Opt <$> try parseOptionDefinition
-        -- Rsv <$> try parseReservedStatement
-      ]
+  [] <$ some (symbol ";")
+    <|> many
+      ( choice
+          [ NorF <$> try parseNormalField,
+            MapF <$> try parseMapField,
+            OneF <$> try parseOneOfField,
+            Msg <$> try parseMessageDefinition,
+            Enum <$> try parseEnumDefinition,
+            Opt <$> try parseOptionDefinition
+            -- Rsv <$> try parseReservedStatement
+          ]
+      )
 
 parseMessageDefinition :: Parser MessageDefinition
 parseMessageDefinition = do
   _ <- symbol "message"
   n <- T.unpack <$> ident
-  e <- between (symbol "{") (symbol "}") ([] <$ some (symbol ";") <|> parseMessageElements)
+  e <- between (symbol "{") (symbol "}") parseMessageElements
   _ <- many $ symbol ";"
   return $ MessageDefinition n e
 

@@ -132,29 +132,50 @@ testEnumDefinition =
   describe "[Parsing] Enum Definitions" $ do
     it "empty enum" $
       parseTopLevelDefs "enum Enum\n {}"
-        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] []]
+        `shouldParse` [EnumDef $ EnumDefinition "Enum" []]
     it "enum with just empty statements" $
       parseTopLevelDefs "enum Enum\n {;;}"
-        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] []]
+        `shouldParse` [EnumDef $ EnumDefinition "Enum" []]
     it "simple enum" $
       parseTopLevelDefs "enum Enum\n {\nUNKNOWN = 0;\n;;; RUNNING = -2;\n}"
-        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] [EnumField "UNKNOWN" 0 [], EnumField "RUNNING" (-2) []]]
+        `shouldParse` [ EnumDef $
+                          EnumDefinition
+                            "Enum"
+                            [EnField (EnumField "UNKNOWN" 0 []), EnField (EnumField "RUNNING" (-2) [])]
+                      ]
     it "parse enum with options (1/2)" $
       parseTopLevelDefs "enum Enum\n {option allow_alias = true\t;\n UNKNOWN = 0;}"
-        `shouldParse` [EnumDef $ EnumDefinition "Enum" [("allow_alias", BoolLit True)] [EnumField "UNKNOWN" 0 []]]
+        `shouldParse` [ EnumDef $
+                          EnumDefinition
+                            "Enum"
+                            [EnOpt ("allow_alias", BoolLit True), EnField (EnumField "UNKNOWN" 0 [])]
+                      ]
     it "parse enum with options (2/2)" $
-      parseTopLevelDefs "enum Enum\n {UNKNOWN = 0; option allow_alias=false;}"
-        `shouldParse` [EnumDef $ EnumDefinition "Enum" [("allow_alias", BoolLit False)] [EnumField "UNKNOWN" 0 []]]
+      parseTopLevelDefs "enum Enum\n {option allow_alias=false;UNKNOWN = 0; }"
+        `shouldParse` [ EnumDef $
+                          EnumDefinition
+                            "Enum"
+                            [EnOpt ("allow_alias", BoolLit False), EnField (EnumField "UNKNOWN" 0 [])]
+                      ]
     it "parse enum with value options" $
       parseTopLevelDefs "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\", my_int=6];}"
-        `shouldParse` [EnumDef $ EnumDefinition "Enum" [] [EnumField "RUNNING" 2 [("(custom_option)", StringLit "foo"), ("my_int", IntLit 6)]]]
+        `shouldParse` [ EnumDef $
+                          EnumDefinition
+                            "Enum"
+                            [EnField (EnumField "RUNNING" 2 [("(custom_option)", StringLit "foo"), ("my_int", IntLit 6)])]
+                      ]
     it "original order of enum fields and options is preserved" $
       parseTopLevelDefs "enum Enum\n {\nf1 = 0;\n;option o1 = bla;; f2 = 1; option o2 = true; f3=2; option o3=false;\n}"
         `shouldParse` [ EnumDef $
                           EnumDefinition
                             "Enum"
-                            [("o1", Identifier "bla"), ("o2", BoolLit True), ("o3", BoolLit False)]
-                            [EnumField "f1" 0 [], EnumField "f2" 1 [], EnumField "f3" 2 []]
+                            [ EnField (EnumField "f1" 0 []),
+                              EnOpt ("o1", Identifier "bla"),
+                              EnField (EnumField "f2" 1 []),
+                              EnOpt ("o2", BoolLit True),
+                              EnField (EnumField "f3" 2 []),
+                              EnOpt ("o3", BoolLit False)
+                            ]
                       ]
     it "fails if closing square bracket is missing" $
       run `shouldFailOn` addSyntaxStatement "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\";}"
@@ -322,16 +343,16 @@ testMessageWithEnums =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [Enum $ EnumDefinition "Enum" [] [EnumField "A" 0 [], EnumField "B" 1 []]]
+                            [Enum $ EnumDefinition "Enum" [EnField (EnumField "A" 0 []), EnField (EnumField "B" 1 [])]]
                       ]
     it "message with two enums and one opt" $
       parseTopLevelDefs "message M { enum E1 {A = 0;};\t; option o = foo;  enum E2 {}}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ Enum $ EnumDefinition "E1" [] [EnumField "A" 0 []],
+                            [ Enum $ EnumDefinition "E1" [EnField (EnumField "A" 0 [])],
                               Opt ("o", Identifier "foo"),
-                              Enum $ EnumDefinition "E2" [] []
+                              Enum $ EnumDefinition "E2" []
                             ]
                       ]
     it "fails if option is not correct" $
