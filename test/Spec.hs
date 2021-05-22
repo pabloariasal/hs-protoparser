@@ -366,31 +366,59 @@ testMessageWithReservedFieldNumbers =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [RsvFieldNums [Single 5] ]
+                            [RsvFieldNums [Single 5]]
                       ]
     it "message with multiple reserved field numbers" $
       parseTopLevelDefs "message M { reserved 5, 7,   7 ; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [RsvFieldNums [Single 5, Single 7, Single 7] ]
+                            [RsvFieldNums [Single 5, Single 7, Single 7]]
                       ]
     it "message with reserved field number range" $
       parseTopLevelDefs "message M { reserved 5 to 9; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [RsvFieldNums [Range 5 9] ]
+                            [RsvFieldNums [Range 5 9]]
                       ]
     it "message with multiple reserved field numbers" $
-      parseTopLevelDefs "message M { reserved 5 to 9, 7, 8 to 11, 0; }"
+      parseTopLevelDefs "message M { reserved 5 to 9, 7, 8 to 11, 0; reserved 7 to 4, 42; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [RsvFieldNums [Range 5 9, Single 7, Range 8 11, Single 0] ]
+                            [RsvFieldNums [Range 5 9, Single 7, Range 8 11, Single 0], RsvFieldNums [Range 7 4, Single 42]]
                       ]
     it "fails if ; is missing" $
       run `shouldFailOn` addSyntaxStatement "message M { reserved 9}"
+    it "fails on empty list" $
+      run `shouldFailOn` addSyntaxStatement "message M { reserved ;}"
+
+testMessageWithReservedFieldNames :: SpecWith ()
+testMessageWithReservedFieldNames =
+  describe "[Parsing] Messages with reserved field names" $ do
+    it "message with single reserved field number" $
+      parseTopLevelDefs "message M { reserved \"foo\" ;;  ; reserved 8; reserved 'bla'; }"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [RsvFieldNames ["foo"], RsvFieldNums [Single 8], RsvFieldNames ["bla"]]
+                      ]
+    it "message with multiple reserved field numbers" $
+      parseTopLevelDefs "message M { reserved 'foo', \"bar\"; ;;; \t\rreserved \"qux\"\t; }"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [RsvFieldNames ["foo", "bar"], RsvFieldNames ["qux"]]
+                      ]
+    it "fails on empty field name list" $
+      run `shouldFailOn` addSyntaxStatement "message M { reserved ;}"
+    it "fails on invalid field name" $
+      run `shouldFailOn` addSyntaxStatement "message M { reserved '8foo' ;}"
+    it "fails on invalid field name 2" $
+      run `shouldFailOn` addSyntaxStatement "message M { reserved foo ;}"
+    it "fails if ; is missing" $
+      run `shouldFailOn` addSyntaxStatement "message M { reserved \"foo\"}"
 
 testNestedMessages :: SpecWith ()
 testNestedMessages =
@@ -417,6 +445,7 @@ main = hspec $ do
   testMessageWithOptions
   testMessageWithEnums
   testMessageWithReservedFieldNumbers
+  testMessageWithReservedFieldNames
   testNestedMessages
   testMessageWithOneOfFields
   testMessageWithMapFields

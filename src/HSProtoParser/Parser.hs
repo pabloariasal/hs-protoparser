@@ -45,7 +45,7 @@ signedFloat :: Parser Float
 signedFloat = L.signed sc float
 
 betweenChar :: Char -> Parser Text -> Parser Text
-betweenChar c = between (char c) (char c)
+betweenChar c = between (char c) (symbol (T.singleton c))
 
 stringLiteral :: Parser Text
 stringLiteral = do
@@ -160,6 +160,12 @@ parseFieldNumberSpec = try singleNum <|> range
 parseReservedFieldNumbersStatement :: Parser [FieldNumberSpec]
 parseReservedFieldNumbersStatement = symbol "reserved" *> parseFieldNumberSpec `sepBy1` symbol "," <* some (symbol ";")
 
+parseFieldNameSpec :: Parser String
+parseFieldNameSpec = T.unpack <$> (betweenChar '"' ident <|> betweenChar '\'' ident)
+
+parseReservedFieldNamesStatement :: Parser [String]
+parseReservedFieldNamesStatement = symbol "reserved" *> parseFieldNameSpec `sepBy1` symbol "," <* some (symbol ";")
+
 parseKeyType :: Parser KeyType
 parseKeyType =
   choice
@@ -247,7 +253,8 @@ parseMessageElements =
             Msg <$> try parseMessageDefinition,
             Enum <$> try parseEnumDefinition,
             Opt <$> try parseOptionDefinition,
-            RsvFieldNums <$> try parseReservedFieldNumbersStatement
+            RsvFieldNums <$> try parseReservedFieldNumbersStatement,
+            RsvFieldNames <$> try parseReservedFieldNamesStatement
           ]
       )
 
