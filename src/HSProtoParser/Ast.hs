@@ -85,7 +85,7 @@ data NormalField = NormalField
   }
   deriving (Eq, Show)
 
-data ReservedStatement = ReservedStatement deriving (Eq, Show)
+data FieldNumberSpec = Single Int | Range Int Int deriving (Eq, Show)
 
 data MessageElement
   = OneF OneOfField
@@ -94,7 +94,8 @@ data MessageElement
   | Msg MessageDefinition
   | Enum EnumDefinition
   | Opt OptionDefinition
-  | Rsv ReservedStatement
+  | RsvFieldNums [FieldNumberSpec]
+  | RsvFieldNames [String]
   deriving (Eq, Show)
 
 data MessageDefinition = MessageDefinition

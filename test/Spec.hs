@@ -358,6 +358,40 @@ testMessageWithEnums =
     it "fails if option is not correct" $
       run `shouldFailOn` addSyntaxStatement "message M { enum Enum {}"
 
+testMessageWithReservedFieldNumbers :: SpecWith ()
+testMessageWithReservedFieldNumbers =
+  describe "[Parsing] Messages with reserved field numbers" $ do
+    it "message with single reserved field number" $
+      parseTopLevelDefs "message M { reserved 5;;; }"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [RsvFieldNums [Single 5] ]
+                      ]
+    it "message with multiple reserved field numbers" $
+      parseTopLevelDefs "message M { reserved 5, 7,   7 ; }"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [RsvFieldNums [Single 5, Single 7, Single 7] ]
+                      ]
+    it "message with reserved field number range" $
+      parseTopLevelDefs "message M { reserved 5 to 9; }"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [RsvFieldNums [Range 5 9] ]
+                      ]
+    it "message with multiple reserved field numbers" $
+      parseTopLevelDefs "message M { reserved 5 to 9, 7, 8 to 11, 0; }"
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "M"
+                            [RsvFieldNums [Range 5 9, Single 7, Range 8 11, Single 0] ]
+                      ]
+    it "fails if ; is missing" $
+      run `shouldFailOn` addSyntaxStatement "message M { reserved 9}"
+
 testNestedMessages :: SpecWith ()
 testNestedMessages =
   describe "[Parsing] Nested Message Definitions" $ do
@@ -382,6 +416,7 @@ main = hspec $ do
   testMessageWithNormalFields
   testMessageWithOptions
   testMessageWithEnums
+  testMessageWithReservedFieldNumbers
   testNestedMessages
   testMessageWithOneOfFields
   testMessageWithMapFields

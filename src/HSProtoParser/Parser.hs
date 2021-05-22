@@ -151,8 +151,14 @@ parseEnumDefinition = do
   _ <- many $ symbol ";"
   return (EnumDefinition n e)
 
-parseReservedStatement :: Parser ReservedStatement
-parseReservedStatement = undefined
+parseFieldNumberSpec :: Parser FieldNumberSpec
+parseFieldNumberSpec = try singleNum <|> range
+  where
+    singleNum = Single <$> integer <* notFollowedBy (symbol "to")
+    range = Range <$> integer <*> (symbol "to" *> integer)
+
+parseReservedFieldNumbersStatement :: Parser [FieldNumberSpec]
+parseReservedFieldNumbersStatement = symbol "reserved" *> parseFieldNumberSpec `sepBy1` symbol "," <* some (symbol ";")
 
 parseKeyType :: Parser KeyType
 parseKeyType =
@@ -240,8 +246,8 @@ parseMessageElements =
             OneF <$> try parseOneOfField,
             Msg <$> try parseMessageDefinition,
             Enum <$> try parseEnumDefinition,
-            Opt <$> try parseOptionDefinition
-            -- Rsv <$> try parseReservedStatement
+            Opt <$> try parseOptionDefinition,
+            RsvFieldNums <$> try parseReservedFieldNumbersStatement
           ]
       )
 
