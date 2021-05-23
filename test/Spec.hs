@@ -11,4 +11,4 @@ main = hspec spec
 spec :: SpecWith ()
 spec = do
   describe "Unit Tests" ParserSpec.spec
-  describe "E2E Tests" Integration.Spec.spec
+  describe "Integration Tests" Integration.Spec.spec
