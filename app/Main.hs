@@ -5,6 +5,7 @@ module Main where
 import HSProtoParser.Parser
 import System.Environment
 import System.Exit
+import Text.Pretty.Simple (pPrintNoColor)
 
 main :: IO ()
 main = getArgs >>= parseArgs
@@ -26,4 +27,4 @@ runParser s i = do
   c <- i
   case parseProto s c of
     Left e -> putStr e >> exitFailure
-    Right t -> print t >> exitSuccess
+    Right t -> pPrintNoColor t >> exitSuccess
