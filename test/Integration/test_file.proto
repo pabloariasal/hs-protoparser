@@ -1,0 +1,4 @@
+syntax = "proto3";
+package foo.bar; // comment
+package qux;
+/* import public "other.proto"; */

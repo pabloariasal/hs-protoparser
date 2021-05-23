@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d0766009e7f276351ff7cc6309ab07aefee7d83a10ed1721dd9f7839e88c71b8
+-- hash: 29c3a72fe8ea5feb2c15e0a13c45e15708ba24d8b7295b02c131ec6349a34243
 
 name:           hs-protoparser
 version:        0.1.0.0
@@ -59,6 +59,8 @@ test-suite hs-protoparser-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Integration.Spec
+      ParserSpec
       Paths_hs_protoparser
   hs-source-dirs:
       test
