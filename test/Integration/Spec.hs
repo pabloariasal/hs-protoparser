@@ -19,7 +19,7 @@ topLevelDefinitions = []
 
 spec :: Spec
 spec = before (readFile "test/Integration/test_file.proto") $ do
-  describe "absolute" $ do
-    it "returns the original number when given a positive input" $ \proto ->
+  describe "Integration" $ do
+    it "parse succeeds on a valid proto file" $ \proto ->
       do
         parseProto "" proto `shouldBe` Right (ProtoFile "proto3" packageSpecifications importStatements optionDefinitions topLevelDefinitions)
