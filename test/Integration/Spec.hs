@@ -10,7 +10,20 @@ expectedFileElements =
     PackageSpec "foo.bar",
     PackageSpec "qux",
     ImportStmt $
-      ImportStatement (Just Public) "other.proto"
+      ImportStatement (Just Public) "other.proto",
+    EnumDef $
+      EnumDefinition
+        "EnumAllowingAlias"
+        [ EnOpt ("allow_alias", BoolLit True),
+          EnField $ EnumField "UNKNOWN" 0 [],
+          EnField $ EnumField "STARTED" 1 [],
+          EnField $
+            EnumField
+              "RUNNING"
+              2
+              [("(custom_option)", StringLit "hello world"), ("my_opt", IntLit 42)]
+        ],
+    OptionDef ("java_package", StringLit "com.example.foo")
   ]
 
 spec :: Spec
