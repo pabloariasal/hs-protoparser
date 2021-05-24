@@ -48,7 +48,6 @@ data FieldDefinition = FieldDefinition
   deriving (Eq, Show)
 
 data OneOfFieldElement = OFFieldDef FieldDefinition | OFOptDef OptionDefinition deriving (Eq, Show)
-
 data OneOfField = OneOfField
   { name :: String,
     elements :: [OneOfFieldElement]

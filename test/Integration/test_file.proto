@@ -13,3 +13,23 @@ enum EnumAllowingAlias {
   RUNNING = 2 [(custom_option) = "hello world", my_opt = 42];
 }
 option java_package = "com.example.foo";
+message Outer {
+  option (my_option).a = true;
+  ;
+  message Inner {   // Level 2
+    int64 ival = 1;
+    oneof foo {
+        string name = 4 [a=true];
+        option java = 5.0;
+        SubMessage sub_message = 9;
+    }
+    ;;
+  }
+  // some comment
+  reserved /* some inline comment*/ 9, 9 to 11, 42;
+  repeated Inner inner_message = 2 [r=foo];
+  reserved "foo", "bar";
+  EnumAllowingAlias enum_field =3;
+  map<int32, bytes> my_map = 4 [i=-90];
+  enum MyEnum {BLA = 2;}
+}
