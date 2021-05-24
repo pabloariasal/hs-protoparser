@@ -1,9 +1,8 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
-import Test.Hspec
-
-import ParserSpec qualified
 import Integration.Spec qualified
+import ParserSpec qualified
+import Test.Hspec
 
 main :: IO ()
 main = hspec spec

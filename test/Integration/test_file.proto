@@ -1,4 +1,5 @@
 syntax = "proto3";
 package foo.bar; // comment
 package qux;
-/* import public "other.proto"; */
+/* import public "some.proto"; */
+import public "other.proto";

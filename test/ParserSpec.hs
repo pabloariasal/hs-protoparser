@@ -1,3 +1,4 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module ParserSpec (spec) where
@@ -8,166 +9,173 @@ import HSProtoParser.Ast
 import HSProtoParser.Parser
 import Test.Hspec
 import Test.Hspec.Megaparsec
-import Text.Megaparsec
+import Text.Megaparsec qualified as M
 
 addSyntaxStatement :: Text -> Text
 addSyntaxStatement s = "syntax='proto3';\n" `append` s
 
 -- runs the proto parser with the provided input
-run :: Text -> Either (ParseErrorBundle Text Void) ProtoFile
-run = parse protoParser ""
+runParser :: Text -> Either (M.ParseErrorBundle Text Void) ProtoFile
+runParser = M.parse protoParser ""
 
-runMap :: (ProtoFile -> a) -> Text -> Either (ParseErrorBundle Text Void) a
-runMap f t = f <$> run t
+runWithSyntax :: Text -> Either (M.ParseErrorBundle Text Void) ProtoFile
+runWithSyntax t = tail <$> (runParser . addSyntaxStatement) t
 
-parseSyntax :: Text -> Either (ParseErrorBundle Text Void) SyntaxStatement
-parseSyntax = runMap syntaxStmt
+-- runMap :: (ProtoFile -> a) -> Text -> Either (ParseErrorBundle Text Void) a
+-- runMap f t = f <$> run t
 
-parsePackage :: Text -> Either (ParseErrorBundle Text Void) [PackageSpecification]
-parsePackage t = runMap packageSpec (addSyntaxStatement t)
+-- parseSyntax :: Text -> Either (ParseErrorBundle Text Void) SyntaxStatement
+-- parseSyntax = runMap syntaxStmt
 
-parseImports :: Text -> Either (ParseErrorBundle Text Void) [ImportStatement]
-parseImports t = runMap importStmts (addSyntaxStatement t)
+-- parsePackage :: Text -> Either (ParseErrorBundle Text Void) [PackageSpecification]
+-- parsePackage t = runMap packageSpec (addSyntaxStatement t)
 
-parseOptions :: Text -> Either (ParseErrorBundle Text Void) [OptionDefinition]
-parseOptions t = runMap optionDefs (addSyntaxStatement t)
+-- parseImports :: Text -> Either (ParseErrorBundle Text Void) [ImportStatement]
+-- parseImports t = runMap importStmts (addSyntaxStatement t)
 
-parseTopLevelDefs :: Text -> Either (ParseErrorBundle Text Void) [TopLevelDefinition]
-parseTopLevelDefs t = runMap topLevelDefs (addSyntaxStatement t)
+-- parseOptions :: Text -> Either (ParseErrorBundle Text Void) [OptionDefinition]
+-- parseOptions t = runMap optionDefs (addSyntaxStatement t)
+
+-- parseTopLevelDefs :: Text -> Either (ParseErrorBundle Text Void) [TopLevelDefinition]
+-- parseTopLevelDefs t = runMap topLevelDefs (addSyntaxStatement t)
 
 testSyntaxDefinition :: Spec
 testSyntaxDefinition =
   describe "[Parsing] Syntax Definition" $ do
     it "double quotes" $
-      parseSyntax "syntax = \"proto3\";" `shouldParse` "proto3"
+      runParser "syntax = \"proto3\";" `shouldParse` [SyntaxStmt "proto3"]
     it "single quotes" $
-      parseSyntax "syntax = 'proto3';" `shouldParse` "proto3"
+      runParser "syntax = 'proto3';" `shouldParse` [SyntaxStmt "proto3"]
     it "with space inbetween" $
-      parseSyntax "\n  \tsyntax   =  \n  'proto3';" `shouldParse` "proto3"
+      runParser "\n  \tsyntax   =  \n  'proto3';" `shouldParse` [SyntaxStmt "proto3"]
     it "fails if no syntax specified" $
-      run `shouldFailOn` ""
+      runParser `shouldFailOn` ""
     it "fails if syntax is not proto3" $
-      run `shouldFailOn` "syntax = 'proto2';"
+      runParser `shouldFailOn` "syntax = 'proto2';"
     it "fails if syntax is missing semicolon" $
-      run `shouldFailOn` "syntax = 'proto3'"
-
-testPackageSpecifier :: Spec
-testPackageSpecifier =
-  describe "[Parsing] Package Specifier" $ do
-    it "parses package specifier" $
-      parsePackage "import '';package  \n F_o__o.b4332ar.RJ7_;" `shouldParse` ["F_o__o.b4332ar.RJ7_"]
-    it "fails if package specifier starts with '_'" $
-      run `shouldFailOn` addSyntaxStatement "package _foo;"
-    it "fails if sub package specifier starts with '_'" $
-      run `shouldFailOn` addSyntaxStatement "package a._b;"
-    it "fails if package specifier doesn't end with ';'" $
-      run `shouldFailOn` addSyntaxStatement "package a.b"
-    it "fails if package specifier has symbol '!'" $
-      run `shouldFailOn` addSyntaxStatement "package a!b;"
-
-testImportStatements :: Spec
-testImportStatements =
-  describe "[Parsing] Import Statements" $ do
-    it "parse simple import statement" $
-      parseImports "package foo;import public \"file.proto\";" `shouldParse` [ImportStatement (Just Public) "file.proto"]
-    it "parses import statements in the right order" $
-      parseImports " import   public \"first\n.proto\";\nimport 'second.proto'   ;\timport weak 'third.proto'; "
-        `shouldParse` [ ImportStatement (Just Public) "first\n.proto",
-                        ImportStatement Nothing "second.proto",
-                        ImportStatement (Just Weak) "third.proto"
-                      ]
-    it "fails with wrong access qualifier" $
-      run `shouldFailOn` addSyntaxStatement "import foo 'bar';"
-    it "fails if doesn't end with ';'" $
-      run `shouldFailOn` addSyntaxStatement "import 'bar'"
+      runParser `shouldFailOn` "syntax = 'proto3'"
 
 testEmptyStatement :: Spec
 testEmptyStatement =
   describe "[Parsing] Empty Statement" $ do
     it "parses empty statement" $
-      run "syntax = \"proto3\"; ; \t;;  \t;package foo;\n;;import 'bla.proto';;;"
-        `shouldParse` ProtoFile "proto3" ["foo"] [ImportStatement Nothing "bla.proto"] [] []
+      runParser "syntax = \"proto3\"; ; \t;;  \t;package foo;\n;;import 'bla.proto';;;"
+        `shouldParse` [SyntaxStmt "proto3", PackageSpec "foo", ImportStmt (ImportStatement Nothing "bla.proto")]
+
+testPackageSpecification :: Spec
+testPackageSpecification =
+  describe "[Parsing] Package Specification" $ do
+    it "parses package specification" $
+      runWithSyntax "import '';package  \n F_o__o.b4332ar.RJ7_;"
+        `shouldParse` [ImportStmt (ImportStatement Nothing ""), PackageSpec "F_o__o.b4332ar.RJ7_"]
+    it "fails if package specifier starts with '_'" $
+      runParser `shouldFailOn` addSyntaxStatement "package _foo;"
+    it "fails if sub package specifier starts with '_'" $
+      runParser `shouldFailOn` addSyntaxStatement "package a._b;"
+    it "fails if package specifier doesn't end with ';'" $
+      runParser `shouldFailOn` addSyntaxStatement "package a.b"
+    it "fails if package specifier has symbol '!'" $
+      runParser `shouldFailOn` addSyntaxStatement "package a!b;"
+
+testImportStatements :: Spec
+testImportStatements =
+  describe "[Parsing] Import Statements" $ do
+    it "parse simple import statement" $
+      runWithSyntax "package foo;import public \"file.proto\";"
+        `shouldParse` [ PackageSpec "foo",
+                        ImportStmt (ImportStatement (Just Public) "file.proto")
+                      ]
+    it "parses import statements in the right order" $
+      runWithSyntax " import   public \"first\n.proto\";\nimport 'second.proto'   ;\timport weak 'third.proto'; "
+        `shouldParse` [ ImportStmt $ ImportStatement (Just Public) "first\n.proto",
+                        ImportStmt $ ImportStatement Nothing "second.proto",
+                        ImportStmt $ ImportStatement (Just Weak) "third.proto"
+                      ]
+    it "fails with wrong access qualifier" $
+      runParser `shouldFailOn` addSyntaxStatement "import foo 'bar';"
+    it "fails if doesn't end with ';'" $
+      runParser `shouldFailOn` addSyntaxStatement "import 'bar'"
 
 testOptionDefinition :: Spec
 testOptionDefinition =
   describe "[Parsing] Option Definitions" $ do
     it "string literals" $
-      parseOptions "option java_package = \"com.example.foo\";;"
-        `shouldParse` [("java_package", StringLit "com.example.foo")]
+      runWithSyntax "option java_package = \"com.example.foo\";;"
+        `shouldParse` [OptionDef ("java_package", StringLit "com.example.foo")]
     it "string literals" $
-      parseOptions "option java_package = \"com.example.foo\";;"
-        `shouldParse` [("java_package", StringLit "com.example.foo")]
+      runWithSyntax "option java_package = \"com.example.foo\";;"
+        `shouldParse` [OptionDef ("java_package", StringLit "com.example.foo")]
     it "identifiers" $
-      parseOptions "option java_package =    foo.bar;"
-        `shouldParse` [("java_package", Identifier "foo.bar")]
+      runWithSyntax "option java_package =    foo.bar;"
+        `shouldParse` [OptionDef ("java_package", Identifier "foo.bar")]
     it "int literals" $
-      parseOptions "option num1 = -5;option num2=+42;option num3=666;"
-        `shouldParse` [("num1", IntLit (-5)), ("num2", IntLit 42), ("num3", IntLit 666)]
+      runWithSyntax "option num1 = -5;option num2=+42;option num3=666;"
+        `shouldParse` [OptionDef ("num1", IntLit (-5)), OptionDef ("num2", IntLit 42), OptionDef ("num3", IntLit 666)]
     it "float literals" $
-      parseOptions "option n1=+4.4;option n2 = -1e5;option n3=+10.0E-1;option n4=666;"
-        `shouldParse` [ ("n1", FloatLit 4.4),
-                        ("n2", FloatLit (-100000)),
-                        ("n3", FloatLit 1.0),
-                        ("n4", IntLit 666)
+      runWithSyntax "option n1=+4.4;option n2 = -1e5;option n3=+10.0E-1;option n4=666;"
+        `shouldParse` [ OptionDef ("n1", FloatLit 4.4),
+                        OptionDef ("n2", FloatLit (-100000)),
+                        OptionDef ("n3", FloatLit 1.0),
+                        OptionDef ("n4", IntLit 666)
                       ]
     it "boolean literals" $
-      parseOptions "option b1 = false;option b2=true;;"
-        `shouldParse` [("b1", BoolLit False), ("b2", BoolLit True)]
+      runWithSyntax "option b1 = false;option b2=true;;"
+        `shouldParse` [OptionDef ("b1", BoolLit False), OptionDef ("b2", BoolLit True)]
     it "combined" $
-      parseOptions "option fl=-4.4;option id = foo;option il=42;option sl=\"666\";option bl=false;"
-        `shouldParse` [ ("fl", FloatLit (-4.4)),
-                        ("id", Identifier "foo"),
-                        ("il", IntLit 42),
-                        ("sl", StringLit "666"),
-                        ("bl", BoolLit False)
+      runWithSyntax "option fl=-4.4;option id = foo;option il=42;option sl=\"666\";option bl=false;"
+        `shouldParse` [ OptionDef ("fl", FloatLit (-4.4)),
+                        OptionDef ("id", Identifier "foo"),
+                        OptionDef ("il", IntLit 42),
+                        OptionDef ("sl", StringLit "666"),
+                        OptionDef ("bl", BoolLit False)
                       ]
     it "parentherized option name" $
-      parseOptions "option (  custom_option\n).foo.bar = false;"
-        `shouldParse` [("(custom_option).foo.bar", BoolLit False)]
+      runWithSyntax "option (  custom_option\n).foo.bar = false;"
+        `shouldParse` [OptionDef ("(custom_option).foo.bar", BoolLit False)]
     it "fails if parenthesis is not on first identifier" $
-      run `shouldFailOn` addSyntaxStatement "option foo.(a) = false;"
+      runParser `shouldFailOn` addSyntaxStatement "option foo.(a) = false;"
     it "fails if closing parenthesis is missing" $
-      run `shouldFailOn` addSyntaxStatement "option (a = false;"
+      runParser `shouldFailOn` addSyntaxStatement "option (a = false;"
 
 testEnumDefinition :: Spec
 testEnumDefinition =
   describe "[Parsing] Enum Definitions" $ do
     it "empty enum" $
-      parseTopLevelDefs "enum Enum\n {}"
+      runWithSyntax "enum Enum\n {}"
         `shouldParse` [EnumDef $ EnumDefinition "Enum" []]
     it "enum with just empty statements" $
-      parseTopLevelDefs "enum Enum\n {;;}"
+      runWithSyntax "enum Enum\n {;;}"
         `shouldParse` [EnumDef $ EnumDefinition "Enum" []]
     it "simple enum" $
-      parseTopLevelDefs "enum Enum\n {\nUNKNOWN = 0;\n;;; RUNNING = -2;\n}"
+      runWithSyntax "enum Enum\n {\nUNKNOWN = 0;\n;;; RUNNING = -2;\n}"
         `shouldParse` [ EnumDef $
                           EnumDefinition
                             "Enum"
                             [EnField (EnumField "UNKNOWN" 0 []), EnField (EnumField "RUNNING" (-2) [])]
                       ]
     it "parse enum with options (1/2)" $
-      parseTopLevelDefs "enum Enum\n {option allow_alias = true\t;\n UNKNOWN = 0;}"
+      runWithSyntax "enum Enum\n {option allow_alias = true\t;\n UNKNOWN = 0;}"
         `shouldParse` [ EnumDef $
                           EnumDefinition
                             "Enum"
                             [EnOpt ("allow_alias", BoolLit True), EnField (EnumField "UNKNOWN" 0 [])]
                       ]
     it "parse enum with options (2/2)" $
-      parseTopLevelDefs "enum Enum\n {option allow_alias=false;UNKNOWN = 0; }"
+      runWithSyntax "enum Enum\n {option allow_alias=false;UNKNOWN = 0; }"
         `shouldParse` [ EnumDef $
                           EnumDefinition
                             "Enum"
                             [EnOpt ("allow_alias", BoolLit False), EnField (EnumField "UNKNOWN" 0 [])]
                       ]
     it "parse enum with value options" $
-      parseTopLevelDefs "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\", my_int=6];}"
+      runWithSyntax "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\", my_int=6];}"
         `shouldParse` [ EnumDef $
                           EnumDefinition
                             "Enum"
                             [EnField (EnumField "RUNNING" 2 [("(custom_option)", StringLit "foo"), ("my_int", IntLit 6)])]
                       ]
     it "original order of enum fields and options is preserved" $
-      parseTopLevelDefs "enum Enum\n {\nf1 = 0;\n;option o1 = bla;; f2 = 1; option o2 = true; f3=2; option o3=false;\n}"
+      runWithSyntax "enum Enum\n {\nf1 = 0;\n;option o1 = bla;; f2 = 1; option o2 = true; f3=2; option o3=false;\n}"
         `shouldParse` [ EnumDef $
                           EnumDefinition
                             "Enum"
@@ -180,29 +188,29 @@ testEnumDefinition =
                             ]
                       ]
     it "fails if closing square bracket is missing" $
-      run `shouldFailOn` addSyntaxStatement "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\";}"
+      runParser `shouldFailOn` addSyntaxStatement "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\";}"
     it "fails if no value options specified" $
-      run `shouldFailOn` addSyntaxStatement "enum Enum\n {RUNNING = 2 [];}"
+      runParser `shouldFailOn` addSyntaxStatement "enum Enum\n {RUNNING = 2 [];}"
 
 testEmptyMessage :: Spec
 testEmptyMessage =
   describe "[Parsing] Empty Message Definitions" $ do
     it "empty message" $
-      parseTopLevelDefs "message M {}"
+      runWithSyntax "message M {}"
         `shouldParse` [MsgDef $ MessageDefinition "M" []]
     it "empty message with empty statements" $
-      parseTopLevelDefs "message M {;\t;}"
+      runWithSyntax "message M {;\t;}"
         `shouldParse` [MsgDef $ MessageDefinition "M" []]
     it "fails if no closing } is found" $
-      run `shouldFailOn` addSyntaxStatement "message M {"
+      runParser `shouldFailOn` addSyntaxStatement "message M {"
     it "fails if no name is provided" $
-      run `shouldFailOn` addSyntaxStatement "message {"
+      runParser `shouldFailOn` addSyntaxStatement "message {"
 
 testMessageWithNormalFields :: Spec
 testMessageWithNormalFields =
   describe "[Parsing] Messages with normal fields" $ do
     it "message with two normal field" $
-      parseTopLevelDefs "message M { foo.Bar nested_message = 2;; repeated int32 samples = 4; }"
+      runWithSyntax "message M { foo.Bar nested_message = 2;; repeated int32 samples = 4; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
@@ -211,7 +219,7 @@ testMessageWithNormalFields =
                             ]
                       ]
     it "message with normal field with options" $
-      parseTopLevelDefs "message M { sint32 foo = 4 [o1=true,o2=-5.0];\n; string bar = 1 [o3=-9];; }"
+      runWithSyntax "message M { sint32 foo = 4 [o1=true,o2=-5.0];\n; string bar = 1 [o3=-9];; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
@@ -220,23 +228,23 @@ testMessageWithNormalFields =
                             ]
                       ]
     it "fails if semicolon missing" $
-      run `shouldFailOn` addSyntaxStatement "message M { bool my_option = true }"
+      runParser `shouldFailOn` addSyntaxStatement "message M { bool my_option = true }"
     it "fails if repeated is misspelled" $
-      run `shouldFailOn` addSyntaxStatement "message M { Repeated fixed64 my_option = 67; }"
+      runParser `shouldFailOn` addSyntaxStatement "message M { Repeated fixed64 my_option = 67; }"
     it "fails if message name starts with number" $
-      run `shouldFailOn` addSyntaxStatement "message M { fixed32 0my_option = 67; }"
+      runParser `shouldFailOn` addSyntaxStatement "message M { fixed32 0my_option = 67; }"
     it "fails if '=' missing" $
-      run `shouldFailOn` addSyntaxStatement "message M { double my_option 67; }"
+      runParser `shouldFailOn` addSyntaxStatement "message M { double my_option 67; }"
     it "fails if ';' missing" $
-      run `shouldFailOn` addSyntaxStatement "message M { sint64 my_option = 67 }"
+      runParser `shouldFailOn` addSyntaxStatement "message M { sint64 my_option = 67 }"
     it "fails if option number is negative" $
-      run `shouldFailOn` addSyntaxStatement "message M { sint64 my_option = -67; }"
+      runParser `shouldFailOn` addSyntaxStatement "message M { sint64 my_option = -67; }"
 
 testMessageWithOneOfFields :: Spec
 testMessageWithOneOfFields =
   describe "[Parsing] Messages with oneof fields" $ do
     it "message with empty oneof field" $
-      parseTopLevelDefs "message M {\toneof foo\n {}}"
+      runWithSyntax "message M {\toneof foo\n {}}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
@@ -244,7 +252,7 @@ testMessageWithOneOfFields =
                             ]
                       ]
     it "message with oneof field with only empty statements" $
-      parseTopLevelDefs "message M {\toneof foo\n {;;}}"
+      runWithSyntax "message M {\toneof foo\n {;;}}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
@@ -252,7 +260,7 @@ testMessageWithOneOfFields =
                             ]
                       ]
     it "message with oneof and two simple fields" $
-      parseTopLevelDefs "message M {\toneof foo\n {string name = 4;;; bytes b = 5;}}"
+      runWithSyntax "message M {\toneof foo\n {string name = 4;;; bytes b = 5;}}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
@@ -265,7 +273,7 @@ testMessageWithOneOfFields =
                             ]
                       ]
     it "message with oneof field with and option and a field" $
-      parseTopLevelDefs "message M {\toneof foo\n {sfixed32 b = 5; option opt = 'value'; }}"
+      runWithSyntax "message M {\toneof foo\n {sfixed32 b = 5; option opt = 'value'; }}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
@@ -278,7 +286,7 @@ testMessageWithOneOfFields =
                             ]
                       ]
     it "message with oneof with field with options" $
-      parseTopLevelDefs "message M {\toneof foo\n {string name = 4[o1=true,o2=-5.0];;;}}"
+      runWithSyntax "message M {\toneof foo\n {string name = 4[o1=true,o2=-5.0];;;}}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
@@ -296,59 +304,59 @@ testMessageWithOneOfFields =
                             ]
                       ]
     it "fails if field is repeated" $
-      run `shouldFailOn` addSyntaxStatement "message M {oneof foo {repeated string name = 4;}}"
+      runParser `shouldFailOn` addSyntaxStatement "message M {oneof foo {repeated string name = 4;}}"
 
 testMessageWithOptions :: Spec
 testMessageWithOptions =
   describe "[Parsing] Messages with Options" $ do
     it "message with two options" $
-      parseTopLevelDefs "message M { option (my_option).a = 42;;; option b = false;; }"
+      runWithSyntax "message M { option (my_option).a = 42;;; option b = false;; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
                             [Opt ("(my_option).a", IntLit 42), Opt ("b", BoolLit False)]
                       ]
     it "fails if option is not correct" $
-      run `shouldFailOn` addSyntaxStatement "message M { option my_option = 42 }"
+      runParser `shouldFailOn` addSyntaxStatement "message M { option my_option = 42 }"
 
 testMessageWithMapFields :: Spec
 testMessageWithMapFields =
   describe "[Parsing] Messages with map fields" $ do
     it "message with simple map field" $
-      parseTopLevelDefs "message M { map< string , Project > projects\n =   3; }"
+      runWithSyntax "message M { map< string , Project > projects\n =   3; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
                             [MapF $ MapField "projects" KTString (FTMessageType "Project") 3 []]
                       ]
     it "message with options" $
-      parseTopLevelDefs "message M { map<bool, bool> projects = 3 [o1=42,o2=false]; }"
+      runWithSyntax "message M { map<bool, bool> projects = 3 [o1=42,o2=false]; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
                             [MapF $ MapField "projects" KTBool FTBool 3 [("o1", IntLit 42), ("o2", BoolLit False)]]
                       ]
     it "fails if ',' is missing" $
-      run `shouldFailOn` addSyntaxStatement "message M { map< string  Project > projects\n =   3; }"
+      runParser `shouldFailOn` addSyntaxStatement "message M { map< string  Project > projects\n =   3; }"
     it "fails if '<' is missing" $
-      run `shouldFailOn` addSyntaxStatement "message M { map string,  Project > projects\n =   3; }"
+      runParser `shouldFailOn` addSyntaxStatement "message M { map string,  Project > projects\n =   3; }"
     it "fails if '>' is missing" $
-      run `shouldFailOn` addSyntaxStatement "message M { map <string,  Project  projects\n =   3; }"
+      runParser `shouldFailOn` addSyntaxStatement "message M { map <string,  Project  projects\n =   3; }"
     it "fails if ';' is missing" $
-      run `shouldFailOn` addSyntaxStatement "message M { map <string,  Project>  projects\n =   3 }"
+      runParser `shouldFailOn` addSyntaxStatement "message M { map <string,  Project>  projects\n =   3 }"
 
 testMessageWithEnums :: Spec
 testMessageWithEnums =
   describe "[Parsing] Messages with Enums" $ do
     it "message with single enums" $
-      parseTopLevelDefs "message M { enum Enum\n {\nA = 0;\n; B = 1;}}"
+      runWithSyntax "message M { enum Enum\n {\nA = 0;\n; B = 1;}}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
                             [Enum $ EnumDefinition "Enum" [EnField (EnumField "A" 0 []), EnField (EnumField "B" 1 [])]]
                       ]
     it "message with two enums and one opt" $
-      parseTopLevelDefs "message M { enum E1 {A = 0;};\t; option o = foo;  enum E2 {}}"
+      runWithSyntax "message M { enum E1 {A = 0;};\t; option o = foo;  enum E2 {}}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
@@ -358,78 +366,78 @@ testMessageWithEnums =
                             ]
                       ]
     it "fails if option is not correct" $
-      run `shouldFailOn` addSyntaxStatement "message M { enum Enum {}"
+      runParser `shouldFailOn` addSyntaxStatement "message M { enum Enum {}"
 
 testMessageWithReservedFieldNumbers :: Spec
 testMessageWithReservedFieldNumbers =
   describe "[Parsing] Messages with reserved field numbers" $ do
     it "message with single reserved field number" $
-      parseTopLevelDefs "message M { reserved 5;;; }"
+      runWithSyntax "message M { reserved 5;;; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
                             [RsvFieldNums [Single 5]]
                       ]
     it "message with multiple reserved field numbers" $
-      parseTopLevelDefs "message M { reserved 5, 7,   7 ; }"
+      runWithSyntax "message M { reserved 5, 7,   7 ; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
                             [RsvFieldNums [Single 5, Single 7, Single 7]]
                       ]
     it "message with reserved field number range" $
-      parseTopLevelDefs "message M { reserved 5 to 9; }"
+      runWithSyntax "message M { reserved 5 to 9; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
                             [RsvFieldNums [Range 5 9]]
                       ]
     it "message with multiple reserved field numbers" $
-      parseTopLevelDefs "message M { reserved 5 to 9, 7, 8 to 11, 0; reserved 7 to 4, 42; }"
+      runWithSyntax "message M { reserved 5 to 9, 7, 8 to 11, 0; reserved 7 to 4, 42; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
                             [RsvFieldNums [Range 5 9, Single 7, Range 8 11, Single 0], RsvFieldNums [Range 7 4, Single 42]]
                       ]
     it "fails if ; is missing" $
-      run `shouldFailOn` addSyntaxStatement "message M { reserved 9}"
+      runParser `shouldFailOn` addSyntaxStatement "message M { reserved 9}"
     it "fails on empty list" $
-      run `shouldFailOn` addSyntaxStatement "message M { reserved ;}"
+      runParser `shouldFailOn` addSyntaxStatement "message M { reserved ;}"
 
 testMessageWithReservedFieldNames :: Spec
 testMessageWithReservedFieldNames =
   describe "[Parsing] Messages with reserved field names" $ do
     it "message with single reserved field number" $
-      parseTopLevelDefs "message M { reserved \"foo\" ;;  ; reserved 8; reserved 'bla'; }"
+      runWithSyntax "message M { reserved \"foo\" ;;  ; reserved 8; reserved 'bla'; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
                             [RsvFieldNames ["foo"], RsvFieldNums [Single 8], RsvFieldNames ["bla"]]
                       ]
     it "message with multiple reserved field numbers" $
-      parseTopLevelDefs "message M { reserved 'foo', \"bar\"; ;;; \t\rreserved \"qux\"\t; }"
+      runWithSyntax "message M { reserved 'foo', \"bar\"; ;;; \t\rreserved \"qux\"\t; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
                             [RsvFieldNames ["foo", "bar"], RsvFieldNames ["qux"]]
                       ]
     it "fails on empty field name list" $
-      run `shouldFailOn` addSyntaxStatement "message M { reserved ;}"
+      runParser `shouldFailOn` addSyntaxStatement "message M { reserved ;}"
     it "fails on invalid field name" $
-      run `shouldFailOn` addSyntaxStatement "message M { reserved '8foo' ;}"
+      runParser `shouldFailOn` addSyntaxStatement "message M { reserved '8foo' ;}"
     it "fails on invalid field name 2" $
-      run `shouldFailOn` addSyntaxStatement "message M { reserved foo ;}"
+      runParser `shouldFailOn` addSyntaxStatement "message M { reserved foo ;}"
     it "fails if ; is missing" $
-      run `shouldFailOn` addSyntaxStatement "message M { reserved \"foo\"}"
+      runParser `shouldFailOn` addSyntaxStatement "message M { reserved \"foo\"}"
 
 testNestedMessages :: Spec
 testNestedMessages =
   describe "[Parsing] Nested Message Definitions" $ do
     it "message inside message" $
-      parseTopLevelDefs "message Outer { message Inner {} }"
+      runWithSyntax "message Outer { message Inner {} }"
         `shouldParse` [MsgDef $ MessageDefinition "Outer" [Msg $ MessageDefinition "Inner" []]]
     it "multiple nested messages" $
-      parseTopLevelDefs "message O1 { message Inner{} ;} \n; message O2{}"
+      runWithSyntax "message O1 { message Inner{} ;} \n; message O2{}"
         `shouldParse` [ MsgDef (MessageDefinition "O1" [Msg $ MessageDefinition "Inner" []]),
                         MsgDef (MessageDefinition "O2" [])
                       ]
@@ -437,9 +445,9 @@ testNestedMessages =
 spec :: Spec
 spec = do
   testSyntaxDefinition
-  testPackageSpecifier
-  testImportStatements
+  testPackageSpecification
   testEmptyStatement
+  testImportStatements
   testOptionDefinition
   testEnumDefinition
   testEmptyMessage

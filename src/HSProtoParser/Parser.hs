@@ -266,37 +266,20 @@ parseMessageDefinition = do
   _ <- many $ symbol ";"
   return $ MessageDefinition n e
 
-data TopLevelStatement
-  = PackageSpec PackageSpecification
-  | ImportStmt ImportStatement
-  | OptionDef OptionDefinition
-  | TopLevelDef TopLevelDefinition
-  deriving (Eq, Show)
-
-partitionTopLevelStatements :: [TopLevelStatement] -> ([ImportStatement], [PackageSpecification], [OptionDefinition], [TopLevelDefinition])
-partitionTopLevelStatements = foldr acc initVal
-  where
-    initVal = ([], [], [], [])
-    acc (ImportStmt e) ~(im, pa, op, en) = (e : im, pa, op, en)
-    acc (PackageSpec e) ~(im, pa, op, en) = (im, e : pa, op, en)
-    acc (OptionDef e) ~(im, pa, op, en) = (im, pa, e : op, en)
-    acc (TopLevelDef e) ~(im, pa, op, en) = (im, pa, op, e : en)
-
 protoParser :: Parser ProtoFile
 protoParser = do
   sy <- parseSyntax
-  tls <-
+  e <-
     many $
       choice
         [ PackageSpec <$> try parsePackageSpecification,
           ImportStmt <$> try parseImportStatement,
           OptionDef <$> try parseOptionDefinition,
-          TopLevelDef . EnumDef <$> try parseEnumDefinition,
-          TopLevelDef . MsgDef <$> try parseMessageDefinition
+          EnumDef <$> try parseEnumDefinition,
+          MsgDef <$> try parseMessageDefinition
         ]
   _ <- eof
-  let (im, pa, op, en) = partitionTopLevelStatements tls
-  return (ProtoFile sy pa im op en)
+  return $ SyntaxStmt sy : e
 
 parseProto :: String -> String -> Either String ProtoFile
 parseProto f i = case parse protoParser f (T.pack i) of

@@ -123,17 +123,14 @@ data ServiceDefinition = ServiceDefinition deriving (Eq, Show)
 
 type OptionDefinition = (String, Constant)
 
-data TopLevelDefinition
-  = MsgDef MessageDefinition
+data ProtoFileElement
+  = SyntaxStmt SyntaxStatement
+  | PackageSpec PackageSpecification
+  | ImportStmt ImportStatement
+  | OptionDef OptionDefinition
+  | MsgDef MessageDefinition
   | EnumDef EnumDefinition
   | ServiceDef ServiceDefinition
   deriving (Show, Eq)
 
-data ProtoFile = ProtoFile
-  { syntaxStmt :: SyntaxStatement,
-    packageSpec :: [PackageSpecification],
-    importStmts :: [ImportStatement],
-    optionDefs :: [OptionDefinition],
-    topLevelDefs :: [TopLevelDefinition]
-  }
-  deriving (Eq, Show)
+type ProtoFile = [ProtoFileElement]
