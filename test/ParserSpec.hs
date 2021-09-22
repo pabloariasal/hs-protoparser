@@ -21,24 +21,6 @@ runParser = M.parse protoParser ""
 runWithSyntax :: Text -> Either (M.ParseErrorBundle Text Void) ProtoFile
 runWithSyntax t = tail <$> (runParser . addSyntaxStatement) t
 
--- runMap :: (ProtoFile -> a) -> Text -> Either (ParseErrorBundle Text Void) a
--- runMap f t = f <$> run t
-
--- parseSyntax :: Text -> Either (ParseErrorBundle Text Void) SyntaxStatement
--- parseSyntax = runMap syntaxStmt
-
--- parsePackage :: Text -> Either (ParseErrorBundle Text Void) [PackageSpecification]
--- parsePackage t = runMap packageSpec (addSyntaxStatement t)
-
--- parseImports :: Text -> Either (ParseErrorBundle Text Void) [ImportStatement]
--- parseImports t = runMap importStmts (addSyntaxStatement t)
-
--- parseOptions :: Text -> Either (ParseErrorBundle Text Void) [OptionDefinition]
--- parseOptions t = runMap optionDefs (addSyntaxStatement t)
-
--- parseTopLevelDefs :: Text -> Either (ParseErrorBundle Text Void) [TopLevelDefinition]
--- parseTopLevelDefs t = runMap topLevelDefs (addSyntaxStatement t)
-
 testSyntaxDefinition :: Spec
 testSyntaxDefinition =
   describe "[Parsing] Syntax Definition" $ do
