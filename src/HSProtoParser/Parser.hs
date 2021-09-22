@@ -24,11 +24,14 @@ type Parser = Parsec Void Text
 sc :: Parser ()
 sc = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
 
--- verbatim strings, consuming trailing whitespace
+consumeSemicolons :: Parser ()
+consumeSemicolons = () <$ some (symbol ";")
+
+-- match verbatim strings, consuming trailing whitespace
 symbol :: Text -> Parser Text
 symbol = L.symbol sc
 
--- generic lexemes, consuming trailing whitespace
+-- match generic lexemes, like ints. Consumes trailing whitespace
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
 
@@ -45,21 +48,19 @@ signedFloat :: Parser Float
 signedFloat = L.signed sc float
 
 betweenChar :: Char -> Parser Text -> Parser Text
-betweenChar c = between (char c) (symbol (T.singleton c))
+betweenChar c p = between (char c) (char c) p <* sc
 
 stringLiteral :: Parser Text
-stringLiteral = (stringWithSep '\'' <|> stringWithSep '\"') <* sc
+stringLiteral = T.pack <$> (stringWithSep '\'' <|> stringWithSep '\"') <* sc
   where
-    stringWithSep :: Char -> Parser Text
-    stringWithSep s = let m = char s in m *> (T.pack <$> manyTill L.charLiteral m)
+    stringWithSep :: Char -> Parser String
+    stringWithSep s = let m = char s in m *> manyTill L.charLiteral m
 
--- starts with a letter, followed by any combination of alphanumeric and '_'
+-- identifiers start with a letter followed by any combination of alphanumeric and '_'
 ident :: Parser Text
-ident = do
-  a <- T.singleton <$> letterChar
-  r <- T.pack <$> many (alphaNumChar <|> char '_')
-  _ <- sc
-  return (a `T.append` r)
+ident = (T.pack <$> p) <* sc
+  where
+    p = (:) <$> letterChar <*> many (alphaNumChar <|> char '_')
 
 boolLit :: Parser Bool
 boolLit = (True <$ symbol "true" <|> False <$ "false") <* sc
@@ -74,22 +75,18 @@ parseSyntax = do
   _ <- symbol "syntax"
   _ <- symbol "="
   s <- betweenChar '"' (symbol "proto3") <|> betweenChar '\'' (symbol "proto3")
-  _ <- some $ symbol ";"
+  _ <- consumeSemicolons
   return (T.unpack s)
 
 parsePackageSpecification :: Parser PackageSpecification
-parsePackageSpecification = do
-  _ <- symbol "package"
-  p <- parseFullIdent
-  _ <- some $ symbol ";"
-  return $ T.unpack p
+parsePackageSpecification = T.unpack <$> (symbol "package" *> parseFullIdent <* consumeSemicolons)
 
 parseImportStatement :: Parser ImportStatement
 parseImportStatement = do
   _ <- symbol "import"
   access <- optional . try $ (Weak <$ symbol "weak" <|> Public <$ symbol "public")
   path <- stringLiteral
-  _ <- some $ symbol ";"
+  _ <- consumeSemicolons
   return $ ImportStatement access (T.unpack path)
 
 parseConstant :: Parser Constant
@@ -120,11 +117,7 @@ parseOptionDefinition = do
   return (T.unpack k, v)
 
 parseFieldOption :: Parser OptionDefinition
-parseFieldOption = do
-  n <- T.unpack <$> parseOptionName
-  _ <- symbol "="
-  k <- parseConstant
-  return (n, k)
+parseFieldOption = (,) <$> (T.unpack <$> parseOptionName <* symbol "=") <*> parseConstant
 
 parseFieldOptions :: Parser [OptionDefinition]
 parseFieldOptions = between (symbol "[") (symbol "]") (parseFieldOption `sepBy1` symbol ",") <|> [] <$ lookAhead (symbol ";")
@@ -192,7 +185,7 @@ parseMapField = do
   _ <- symbol "map"
   (kt, vt) <- parseMapFieldTypes
   (fieldName, num, opts) <- parseFieldInfo
-  _ <- some $ symbol ";"
+  _ <- consumeSemicolons
   return $ MapField fieldName kt vt num opts
 
 parseOneOfElements :: Parser [OneOfFieldElement]

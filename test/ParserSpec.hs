@@ -167,8 +167,8 @@ testEnumDefinition =
                             "Enum"
                             [EnOpt ("allow_alias", BoolLit False), EnField (EnumField "UNKNOWN" 0 [])]
                       ]
-    it "parse enum with value options" $
-      runWithSyntax "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\", my_int=6];}"
+    it "parse enum with field options" $
+      runWithSyntax "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\"   , my_int=6   ];}"
         `shouldParse` [ EnumDef $
                           EnumDefinition
                             "Enum"
