@@ -62,7 +62,7 @@ ident = do
   return (a `T.append` r)
 
 boolLit :: Parser Bool
-boolLit = True <$ symbol "true" <|> False <$ "false"
+boolLit = (True <$ symbol "true" <|> False <$ "false") <* sc
 
 -- '.' separated idents
 parseFullIdent :: Parser Text

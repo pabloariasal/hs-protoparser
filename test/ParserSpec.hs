@@ -119,7 +119,7 @@ testOptionDefinition =
                         OptionDef ("n4", IntLit 666)
                       ]
     it "boolean literals" $
-      runWithSyntax "option b1 = false;option b2=true;;"
+      runWithSyntax "option b1 = false     ;    option b2=true;;"
         `shouldParse` [OptionDef ("b1", BoolLit False), OptionDef ("b2", BoolLit True)]
     it "combined" $
       runWithSyntax "option fl=-4.4;option id = foo;option il=42;option sl=\"666\";option bl=false;"
