@@ -100,11 +100,11 @@ testOptionDefinition :: Spec
 testOptionDefinition =
   describe "[Parsing] Option Definitions" $ do
     it "string literals" $
-      runWithSyntax "option java_package = \"com.example.foo\";;"
+      runWithSyntax "option java_package = \"com.example.foo\"      ;;"
         `shouldParse` [OptionDef ("java_package", StringLit "com.example.foo")]
     it "string literals" $
-      runWithSyntax "option java_package = \"com.example.foo\";;"
-        `shouldParse` [OptionDef ("java_package", StringLit "com.example.foo")]
+      runWithSyntax "option java_package = \"com.'example'.foo\";;"
+        `shouldParse` [OptionDef ("java_package", StringLit "com.'example'.foo")]
     it "identifiers" $
       runWithSyntax "option java_package =    foo.bar;"
         `shouldParse` [OptionDef ("java_package", Identifier "foo.bar")]

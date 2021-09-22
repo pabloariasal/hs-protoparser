@@ -48,12 +48,10 @@ betweenChar :: Char -> Parser Text -> Parser Text
 betweenChar c = between (char c) (symbol (T.singleton c))
 
 stringLiteral :: Parser Text
-stringLiteral = do
-  l <-
-    char '\'' *> manyTill L.charLiteral (char '\'')
-      <|> char '"' *> manyTill L.charLiteral (char '"')
-  _ <- sc
-  return $ T.pack l
+stringLiteral = (stringWithSep '\'' <|> stringWithSep '\"') <* sc
+  where
+    stringWithSep :: Char -> Parser Text
+    stringWithSep s = let m = char s in m *> (T.pack <$> manyTill L.charLiteral m)
 
 -- starts with a letter, followed by any combination of alphanumeric and '_'
 ident :: Parser Text
