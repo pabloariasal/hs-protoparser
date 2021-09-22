@@ -68,6 +68,8 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - megaparsec
+    - text
     - hs-protoparser
     - hspec
     - hspec-megaparsec

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d243c455a862c37e78b4d1ee15ef4a00e2b20718948249d5e66167ccef5baf37
+-- hash: b847f400ebeb0f2c551ac33e50b2def9a65dd5b6a58b09e7fcf3085da6cb599f
 
 name:           hs-protoparser
 version:        0.1.0.0
@@ -69,4 +69,6 @@ test-suite hs-protoparser-test
     , hs-protoparser
     , hspec
     , hspec-megaparsec
+    , megaparsec
+    , text
   default-language: Haskell2010
