@@ -42,14 +42,14 @@ testEmptyStatement =
   describe "[Parsing] Empty Statement" $ do
     it "parses empty statement" $
       runParser "syntax = \"proto3\"; ; \t;;  \t;package foo;\n;;import 'bla.proto';;;"
-        `shouldParse` [SyntaxStmt "proto3", PackageSpec "foo", ImportStmt (ImportStatement Nothing "bla.proto")]
+        `shouldParse` [SyntaxStmt "proto3", PackageSpec "foo", ImportStmt Nothing "bla.proto"]
 
 testPackageSpecification :: Spec
 testPackageSpecification =
   describe "[Parsing] Package Specification" $ do
     it "parses package specification" $
       runWithSyntax "import '';package  \n F_o__o.b4332ar.RJ7_;"
-        `shouldParse` [ImportStmt (ImportStatement Nothing ""), PackageSpec "F_o__o.b4332ar.RJ7_"]
+        `shouldParse` [ImportStmt Nothing "", PackageSpec "F_o__o.b4332ar.RJ7_"]
     it "fails if package specifier starts with '_'" $
       runParser `shouldFailOn` addSyntaxStatement "package _foo;"
     it "fails if sub package specifier starts with '_'" $
@@ -65,13 +65,13 @@ testImportStatements =
     it "parse simple import statement" $
       runWithSyntax "package foo;import public \"file.proto\";"
         `shouldParse` [ PackageSpec "foo",
-                        ImportStmt (ImportStatement (Just Public) "file.proto")
+                        ImportStmt (Just Public) "file.proto"
                       ]
     it "parses import statements in the right order" $
       runWithSyntax " import   public \"first\n.proto\";\nimport 'second.proto'   ;\timport weak 'third.proto'; "
-        `shouldParse` [ ImportStmt $ ImportStatement (Just Public) "first\n.proto",
-                        ImportStmt $ ImportStatement Nothing "second.proto",
-                        ImportStmt $ ImportStatement (Just Weak) "third.proto"
+        `shouldParse` [ ImportStmt (Just Public) "first\n.proto",
+                        ImportStmt Nothing "second.proto",
+                        ImportStmt (Just Weak) "third.proto"
                       ]
     it "fails with wrong access qualifier" $
       runParser `shouldFailOn` addSyntaxStatement "import foo 'bar';"

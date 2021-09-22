@@ -81,13 +81,13 @@ parseSyntax = do
 parsePackageSpecification :: Parser PackageSpecification
 parsePackageSpecification = T.unpack <$> (symbol "package" *> parseFullIdent <* consumeSemicolons)
 
-parseImportStatement :: Parser ImportStatement
+parseImportStatement :: Parser ProtoFileElement
 parseImportStatement = do
   _ <- symbol "import"
   access <- optional . try $ (Weak <$ symbol "weak" <|> Public <$ symbol "public")
   path <- stringLiteral
   _ <- consumeSemicolons
-  return $ ImportStatement access (T.unpack path)
+  return $ ImportStmt access (T.unpack path)
 
 parseConstant :: Parser Constant
 parseConstant =
@@ -264,7 +264,7 @@ protoParser = do
     many $
       choice
         [ PackageSpec <$> try parsePackageSpecification,
-          ImportStmt <$> try parseImportStatement,
+          try parseImportStatement,
           OptionDef <$> try parseOptionDefinition,
           EnumDef <$> try parseEnumDefinition,
           MsgDef <$> try parseMessageDefinition

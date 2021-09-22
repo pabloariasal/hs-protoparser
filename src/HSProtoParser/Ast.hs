@@ -8,6 +8,8 @@ type PackageSpecification = String
 
 type SyntaxStatement = String
 
+type FileName = String
+
 data Constant
   = Identifier String
   | FloatLit Float
@@ -17,8 +19,6 @@ data Constant
   deriving (Eq, Show)
 
 data AccessQualifier = Public | Weak deriving (Eq, Show)
-
-data ImportStatement = ImportStatement (Maybe AccessQualifier) String deriving (Eq, Show)
 
 data FieldType
   = FTDouble
@@ -125,7 +125,7 @@ type OptionDefinition = (String, Constant)
 data ProtoFileElement
   = SyntaxStmt SyntaxStatement
   | PackageSpec PackageSpecification
-  | ImportStmt ImportStatement
+  | ImportStmt (Maybe AccessQualifier) FileName
   | OptionDef OptionDefinition
   | MsgDef MessageDefinition
   | EnumDef EnumDefinition

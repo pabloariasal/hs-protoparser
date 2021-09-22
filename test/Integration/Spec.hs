@@ -9,8 +9,7 @@ expectedFileElements =
   [ SyntaxStmt "proto3",
     PackageSpec "foo.bar",
     PackageSpec "qux",
-    ImportStmt $
-      ImportStatement (Just Public) "other.proto",
+    ImportStmt (Just Public) "other.proto",
     EnumDef $
       EnumDefinition
         "EnumAllowingAlias"
