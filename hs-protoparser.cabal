@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5ca3cf1dba068d3586c9f7151914250771870c50b8b68a7c760ab2680709f5d5
+-- hash: d243c455a862c37e78b4d1ee15ef4a00e2b20718948249d5e66167ccef5baf37
 
 name:           hs-protoparser
 version:        0.1.0.0
@@ -33,7 +33,7 @@ library
       Paths_hs_protoparser
   hs-source-dirs:
       src
-  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-missing-deriving-strategies -Wno-missing-safe-haskell-mode
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-missing-deriving-strategies -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module
   build-depends:
       base >=4.7 && <5
     , megaparsec
@@ -47,13 +47,11 @@ executable hs-protoparser-exe
       Paths_hs_protoparser
   hs-source-dirs:
       app
-  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-missing-deriving-strategies -Wno-missing-safe-haskell-mode -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-missing-deriving-strategies -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , hs-protoparser
-    , megaparsec
     , pretty-simple
-    , text
   default-language: Haskell2010
 
 test-suite hs-protoparser-test
@@ -65,12 +63,10 @@ test-suite hs-protoparser-test
       Paths_hs_protoparser
   hs-source-dirs:
       test
-  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-missing-deriving-strategies -Wno-missing-safe-haskell-mode -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-missing-deriving-strategies -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , hs-protoparser
     , hspec
     , hspec-megaparsec
-    , megaparsec
-    , text
   default-language: Haskell2010
