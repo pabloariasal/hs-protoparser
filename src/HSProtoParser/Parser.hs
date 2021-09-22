@@ -113,7 +113,7 @@ parseOptionDefinition = do
   k <- parseOptionName
   _ <- symbol "="
   v <- parseConstant
-  _ <- some $ symbol ";"
+  _ <- consumeSemicolons
   return (T.unpack k, v)
 
 parseFieldOption :: Parser OptionDefinition
