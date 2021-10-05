@@ -8,7 +8,7 @@ import System.Exit
 import Text.Pretty.Simple (pPrint)
 
 main :: IO ()
--- main = getArgs >>= parseArgs
+main = getArgs >>= parseArgs
 
 -- main = do
 --     f <- readFile "example.proto"

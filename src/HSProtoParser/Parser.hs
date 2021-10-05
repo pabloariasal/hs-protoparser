@@ -128,7 +128,7 @@ parseEnumField = do
   _ <- symbol "="
   v <- signedInteger
   o <- parseFieldOptions
-  _ <- some $ symbol ";"
+  _ <- consumeSemicolons
   return (EnumField n v o)
 
 parseEnumElements :: Parser [EnumElement]
