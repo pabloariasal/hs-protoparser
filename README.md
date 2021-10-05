@@ -1,10 +1,12 @@
 # hs-protoparser
 
-Haskell library for parsing Protocol Buffer files.
+Parser for Protocol Buffer files written in Haskell.
+
+![](screenshot.png)
 
 # Installation
 
-The package is not in hackage yet, but you can you add it as an `extra-dep` on stack:
+If you are using stack you can add the package as an `extra-dep`:
 
 ```sh
 extra-deps:
@@ -13,6 +15,9 @@ extra-deps:
 ```
 
 # Usage
+
+Import the `Parser` module and call `parseProto`, providing the contents to be parsed.
+For example, the following program prints the number of messages defined in the protocol buffer file:
 
 ```haskell
 import HSProtoParser.Parser (parseProto)
@@ -31,5 +36,3 @@ getMessages = foldr f []
     f (MsgDef (MessageDefinition n _)) acc = n:acc
     f _ acc = acc
 ```
-
-# Contributing
