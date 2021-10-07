@@ -179,10 +179,10 @@ testEmptyMessage =
   describe "[Parsing] Empty Message Definitions" $ do
     it "empty message" $
       runWithSyntax "message M {}"
-        `shouldParse` [MsgDef $ MessageDefinition "M" []]
+        `shouldParse` [MsgDef $ MessageDefinition "M" [] [] [] [] [] [] []]
     it "empty message with empty statements" $
-      runWithSyntax "message M {;\t;}"
-        `shouldParse` [MsgDef $ MessageDefinition "M" []]
+      runWithSyntax "message M {;\t;}  ;"
+        `shouldParse` [MsgDef $ MessageDefinition "M" [] [] [] [] [] [] []]
     it "fails if no closing } is found" $
       runParser `shouldFailOn` addSyntaxStatement "message M {"
     it "fails if no name is provided" $
@@ -192,22 +192,34 @@ testMessageWithNormalFields :: Spec
 testMessageWithNormalFields =
   describe "[Parsing] Messages with normal fields" $ do
     it "message with two normal field" $
-      runWithSyntax "message M { foo.Bar nested_message = 2;; repeated int32 samples = 4; }"
+      runWithSyntax "message M { foo.Bar nested_message = 2 ;; repeated int32 samples = 4\n; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ NorF $ NormalField (FieldDefinition "nested_message" (TMessageType "foo.Bar") 2 []) False,
-                              NorF $ NormalField (FieldDefinition "samples" TInt32 4 []) True
+                            []
+                            []
+                            [ NormalField (FieldDefinition "nested_message" (TMessageType "foo.Bar") 2 []) False,
+                              NormalField (FieldDefinition "samples" TInt32 4 []) True
                             ]
+                            []
+                            []
+                            []
+                            []
                       ]
     it "message with normal field with options" $
       runWithSyntax "message M { sint32 foo = 4 [o1=true,o2=-5.0];\n; string bar = 1 [o3=-9];; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ NorF $ NormalField (FieldDefinition "foo" TSInt32 4 [("o1", BoolLit True), ("o2", FloatLit (-5.0))]) False,
-                              NorF $ NormalField (FieldDefinition "bar" TString 1 [("o3", IntLit (-9))]) False
+                            []
+                            []
+                            [ NormalField (FieldDefinition "foo" TSInt32 4 [("o1", BoolLit True), ("o2", FloatLit (-5.0))]) False,
+                              NormalField (FieldDefinition "bar" TString 1 [("o3", IntLit (-9))]) False
                             ]
+                            []
+                            []
+                            []
+                            []
                       ]
     it "fails if semicolon missing" $
       runParser `shouldFailOn` addSyntaxStatement "message M { bool my_option = true }"
@@ -230,60 +242,85 @@ testMessageWithOneOfFields =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ OneF $ OneOfField "foo" []
-                            ]
+                            [OneOfField "foo" []]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            []
                       ]
     it "message with oneof field with only empty statements" $
       runWithSyntax "message M {\toneof foo\n {;;}}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ OneF $ OneOfField "foo" []
-                            ]
+                            [OneOfField "foo" []]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            []
                       ]
     it "message with oneof and two simple fields" $
       runWithSyntax "message M {\toneof foo\n {string name = 4;;; bytes b = 5;}}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ OneF $
-                                OneOfField
-                                  "foo"
-                                  [ OFFieldDef (FieldDefinition "name" TString 4 []),
-                                    OFFieldDef (FieldDefinition "b" TBytes 5 [])
-                                  ]
+                            [ OneOfField
+                                "foo"
+                                [ OFFieldDef (FieldDefinition "name" TString 4 []),
+                                  OFFieldDef (FieldDefinition "b" TBytes 5 [])
+                                ]
                             ]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            []
                       ]
     it "message with oneof field with and option and a field" $
       runWithSyntax "message M {\toneof foo\n {sfixed32 b = 5; option opt = 'value'; }}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ OneF $
-                                OneOfField
-                                  "foo"
-                                  [ OFFieldDef (FieldDefinition "b" TSfixed32 5 []),
-                                    OFOptDef ("opt", StringLit "value")
-                                  ]
+                            [ OneOfField
+                                "foo"
+                                [ OFFieldDef (FieldDefinition "b" TSfixed32 5 []),
+                                  OFOptDef ("opt", StringLit "value")
+                                ]
                             ]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            []
                       ]
     it "message with oneof with field with options" $
       runWithSyntax "message M {\toneof foo\n {string name = 4[o1=true,o2=-5.0];;;}}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ OneF $
-                                OneOfField
-                                  "foo"
-                                  [ OFFieldDef
-                                      ( FieldDefinition
-                                          "name"
-                                          TString
-                                          4
-                                          [("o1", BoolLit True), ("o2", FloatLit (-5.0))]
-                                      )
-                                  ]
+                            [ OneOfField
+                                "foo"
+                                [ OFFieldDef
+                                    ( FieldDefinition
+                                        "name"
+                                        TString
+                                        4
+                                        [("o1", BoolLit True), ("o2", FloatLit (-5.0))]
+                                    )
+                                ]
                             ]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            []
                       ]
     it "fails if field is repeated" $
       runParser `shouldFailOn` addSyntaxStatement "message M {oneof foo {repeated string name = 4;}}"
@@ -296,7 +333,13 @@ testMessageWithOptions =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [Opt ("(my_option).a", IntLit 42), Opt ("b", BoolLit False)]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            [("(my_option).a", IntLit 42), ("b", BoolLit False)]
+                            []
                       ]
     it "fails if option is not correct" $
       runParser `shouldFailOn` addSyntaxStatement "message M { option my_option = 42 }"
@@ -309,14 +352,26 @@ testMessageWithMapFields =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [MapF $ MapField "projects" KTString (TMessageType "Project") 3 []]
+                            []
+                            [MapField "projects" KTString (TMessageType "Project") 3 []]
+                            []
+                            []
+                            []
+                            []
+                            []
                       ]
     it "message with options" $
       runWithSyntax "message M { map<bool, bool> projects = 3 [o1=42,o2=false]; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [MapF $ MapField "projects" KTBool TBool 3 [("o1", IntLit 42), ("o2", BoolLit False)]]
+                            []
+                            [MapField "projects" KTBool TBool 3 [("o1", IntLit 42), ("o2", BoolLit False)]]
+                            []
+                            []
+                            []
+                            []
+                            []
                       ]
     it "fails if ',' is missing" $
       runParser `shouldFailOn` addSyntaxStatement "message M { map< string  Project > projects\n =   3; }"
@@ -335,17 +390,29 @@ testMessageWithEnums =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [Enum $ EnumDefinition "Enum" [EnField (EnumField "A" 0 []), EnField (EnumField "B" 1 [])]]
+                            []
+                            []
+                            []
+                            []
+                            [EnumDefinition "Enum" [EnField (EnumField "A" 0 []), EnField (EnumField "B" 1 [])]]
+                            []
+                            []
                       ]
     it "message with two enums and one opt" $
       runWithSyntax "message M { enum E1 {A = 0;};\t; option o = foo;  enum E2 {}}"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ Enum $ EnumDefinition "E1" [EnField (EnumField "A" 0 [])],
-                              Opt ("o", Identifier "foo"),
-                              Enum $ EnumDefinition "E2" []
+                            []
+                            []
+                            []
+                            []
+                            [ EnumDefinition "E1" [EnField (EnumField "A" 0 [])],
+                              EnumDefinition "E2" []
                             ]
+                            [ ("o", Identifier "foo")
+                            ]
+                            []
                       ]
     it "fails if option is not correct" $
       runParser `shouldFailOn` addSyntaxStatement "message M { enum Enum {}"
@@ -358,28 +425,52 @@ testMessageWithReservedFieldNumbers =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [RsvFieldNums [Single 5]]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            []
+                            [RFNumbers [FSSingle 5]]
                       ]
     it "message with multiple reserved field numbers" $
       runWithSyntax "message M { reserved 5, 7,   7 ; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [RsvFieldNums [Single 5, Single 7, Single 7]]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            []
+                            [RFNumbers [FSSingle 5, FSSingle 7, FSSingle 7]]
                       ]
     it "message with reserved field number range" $
       runWithSyntax "message M { reserved 5 to 9; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [RsvFieldNums [Range 5 9]]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            []
+                            [RFNumbers [FSRange 5 9]]
                       ]
     it "message with multiple reserved field numbers" $
       runWithSyntax "message M { reserved 5 to 9, 7, 8 to 11, 0; reserved 7 to 4, 42; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [RsvFieldNums [Range 5 9, Single 7, Range 8 11, Single 0], RsvFieldNums [Range 7 4, Single 42]]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            []
+                            [RFNumbers [FSRange 5 9, FSSingle 7, FSRange 8 11, FSSingle 0], RFNumbers [FSRange 7 4, FSSingle 42]]
                       ]
     it "fails if ; is missing" $
       runParser `shouldFailOn` addSyntaxStatement "message M { reserved 9}"
@@ -394,14 +485,26 @@ testMessageWithReservedFieldNames =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [RsvFieldNames ["foo"], RsvFieldNums [Single 8], RsvFieldNames ["bla"]]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            []
+                            [RFNames ["foo"], RFNumbers [FSSingle 8], RFNames ["bla"]]
                       ]
     it "message with multiple reserved field numbers" $
       runWithSyntax "message M { reserved 'foo', \"bar\"; ;;; \t\rreserved \"qux\"\t; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [RsvFieldNames ["foo", "bar"], RsvFieldNames ["qux"]]
+                            []
+                            []
+                            []
+                            []
+                            []
+                            []
+                            [RFNames ["foo", "bar"], RFNames ["qux"]]
                       ]
     it "fails on empty field name list" $
       runParser `shouldFailOn` addSyntaxStatement "message M { reserved ;}"
@@ -417,11 +520,38 @@ testNestedMessages =
   describe "[Parsing] Nested Message Definitions" $ do
     it "message inside message" $
       runWithSyntax "message Outer { message Inner {} }"
-        `shouldParse` [MsgDef $ MessageDefinition "Outer" [Msg $ MessageDefinition "Inner" []]]
+        `shouldParse` [MsgDef $
+                       MessageDefinition
+                       "Outer"
+                       []
+                       []
+                       []
+                       [MessageDefinition "Inner" [] [] [] [] [] [] []]
+                       []
+                       []
+                       []]
     it "multiple nested messages" $
       runWithSyntax "message O1 { message Inner{} ;} \n; message O2{}"
-        `shouldParse` [ MsgDef (MessageDefinition "O1" [Msg $ MessageDefinition "Inner" []]),
-                        MsgDef (MessageDefinition "O2" [])
+        `shouldParse` [ MsgDef
+                        (MessageDefinition
+                        "O1"
+                        []
+                        []
+                        []
+                        [MessageDefinition "Inner" [] [] [] [] [] [] []]
+                        []
+                        []
+                        []),
+                        MsgDef
+                        (MessageDefinition
+                        "O2"
+                        []
+                        []
+                        []
+                        []
+                        []
+                        []
+                        [])
                       ]
 
 spec :: Spec

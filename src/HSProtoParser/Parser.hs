@@ -12,12 +12,12 @@ import Data.Scientific (toRealFloat)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Void
-import HSProtoParser.Ast
+-- import Text.Megaparsec.Debug
+
+import HSProtoParser.Ast qualified as Ast
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
-
--- import Text.Megaparsec.Debug
 
 type Parser = Parsec Void Text
 
@@ -69,7 +69,7 @@ boolLit = (True <$ symbol "true" <|> False <$ "false") <* sc
 parseFullIdent :: Parser Text
 parseFullIdent = T.intercalate (T.singleton '.') <$> (ident `sepBy1` char '.')
 
-parseSyntax :: Parser SyntaxStatement
+parseSyntax :: Parser Ast.SyntaxStatement
 parseSyntax = do
   _ <- sc
   _ <- symbol "syntax"
@@ -78,25 +78,25 @@ parseSyntax = do
   _ <- consumeSemicolons
   return (T.unpack s)
 
-parsePackageSpecification :: Parser PackageSpecification
+parsePackageSpecification :: Parser Ast.PackageSpecification
 parsePackageSpecification = T.unpack <$> (symbol "package" *> parseFullIdent <* consumeSemicolons)
 
-parseImportStatement :: Parser ProtoFileElement
+parseImportStatement :: Parser Ast.ProtoFileElement
 parseImportStatement = do
   _ <- symbol "import"
-  access <- optional . try $ (Weak <$ symbol "weak" <|> Public <$ symbol "public")
+  access <- optional . try $ (Ast.Weak <$ symbol "weak" <|> Ast.Public <$ symbol "public")
   path <- stringLiteral
   _ <- consumeSemicolons
-  return $ ImportStmt access (T.unpack path)
+  return $ Ast.ImportStmt access (T.unpack path)
 
-parseConstant :: Parser Constant
+parseConstant :: Parser Ast.Constant
 parseConstant =
   choice
-    [ BoolLit <$> try boolLit,
-      StringLit . T.unpack <$> try stringLiteral,
-      Identifier . T.unpack <$> try parseFullIdent,
-      IntLit <$> try signedInteger,
-      FloatLit <$> try signedFloat
+    [ Ast.BoolLit <$> try boolLit,
+      Ast.StringLit . T.unpack <$> try stringLiteral,
+      Ast.Identifier . T.unpack <$> try parseFullIdent,
+      Ast.IntLit <$> try signedInteger,
+      Ast.FloatLit <$> try signedFloat
     ]
 
 parseOptionName :: Parser Text
@@ -107,7 +107,7 @@ parseOptionName = T.append <$> (try simple <|> surrounded) <*> (T.concat <$> man
     suffix = T.append <$> (T.singleton <$> char '.') <*> ident
     createTripleList a b c = [a, b, c]
 
-parseOptionDefinition :: Parser OptionDefinition
+parseOptionDefinition :: Parser Ast.OptionDefinition
 parseOptionDefinition = do
   _ <- symbol "option"
   k <- parseOptionName
@@ -116,163 +116,186 @@ parseOptionDefinition = do
   _ <- consumeSemicolons
   return (T.unpack k, v)
 
-parseFieldOption :: Parser OptionDefinition
+parseFieldOption :: Parser Ast.OptionDefinition
 parseFieldOption = (,) <$> (T.unpack <$> parseOptionName <* symbol "=") <*> parseConstant
 
-parseFieldOptions :: Parser [OptionDefinition]
+parseFieldOptions :: Parser [Ast.OptionDefinition]
 parseFieldOptions = between (symbol "[") (symbol "]") (parseFieldOption `sepBy1` symbol ",") <|> [] <$ lookAhead (symbol ";")
 
-parseEnumField :: Parser EnumField
+parseEnumField :: Parser Ast.EnumField
 parseEnumField = do
   n <- T.unpack <$> ident
   _ <- symbol "="
   v <- signedInteger
   o <- parseFieldOptions
   _ <- consumeSemicolons
-  return (EnumField n v o)
+  return (Ast.EnumField n v o)
 
-parseEnumElements :: Parser [EnumElement]
-parseEnumElements = ([] <$ some (symbol ";")) <|> many (EnOpt <$> parseOptionDefinition <|> EnField <$> parseEnumField)
+parseEnumElements :: Parser [Ast.EnumElement]
+parseEnumElements = ([] <$ some (symbol ";")) <|> many (Ast.EnOpt <$> parseOptionDefinition <|> Ast.EnField <$> parseEnumField)
 
-parseEnumDefinition :: Parser EnumDefinition
+parseEnumDefinition :: Parser Ast.EnumDefinition
 parseEnumDefinition = do
   _ <- symbol "enum"
   n <- T.unpack <$> ident
   e <- between (symbol "{") (symbol "}") parseEnumElements
   _ <- many $ symbol ";"
-  return (EnumDefinition n e)
+  return (Ast.EnumDefinition n e)
 
-parseFieldNumberSpec :: Parser FieldNumberSpec
+parseFieldNumberSpec :: Parser Ast.FieldNumberSpec
 parseFieldNumberSpec = try singleNum <|> range
   where
-    singleNum = Single <$> integer <* notFollowedBy (symbol "to")
-    range = Range <$> integer <*> (symbol "to" *> integer)
+    singleNum = Ast.FSSingle <$> integer <* notFollowedBy (symbol "to")
+    range = Ast.FSRange <$> integer <*> (symbol "to" *> integer)
 
-parseReservedFieldNumbersStatement :: Parser [FieldNumberSpec]
-parseReservedFieldNumbersStatement = symbol "reserved" *> parseFieldNumberSpec `sepBy1` symbol "," <* some (symbol ";")
+parseReservedFieldNumbersStatement :: Parser Ast.ReservedFieldStatement
+parseReservedFieldNumbersStatement = Ast.RFNumbers <$> (symbol "reserved" *> parseFieldNumberSpec `sepBy1` symbol "," <* some (symbol ";"))
 
 parseFieldNameSpec :: Parser String
 parseFieldNameSpec = T.unpack <$> (betweenChar '"' ident <|> betweenChar '\'' ident)
 
-parseReservedFieldNamesStatement :: Parser [String]
-parseReservedFieldNamesStatement = symbol "reserved" *> parseFieldNameSpec `sepBy1` symbol "," <* some (symbol ";")
+parseReservedFieldNamesStatement :: Parser Ast.ReservedFieldStatement
+parseReservedFieldNamesStatement = Ast.RFNames <$> (symbol "reserved" *> parseFieldNameSpec `sepBy1` symbol "," <* some (symbol ";"))
 
-parseKeyType :: Parser KeyType
+parseKeyType :: Parser Ast.KeyType
 parseKeyType =
   choice
-    [ try $ KTInt32 <$ symbol "int32",
-      try $ KTInt64 <$ symbol "int64",
-      try $ KTUInt32 <$ symbol "uint32",
-      try $ KTUInt64 <$ symbol "uint64",
-      try $ KTSInt32 <$ symbol "sint32",
-      try $ KTSInt64 <$ symbol "sint64",
-      try $ KTFixed32 <$ symbol "fixed32",
-      try $ KTFixed64 <$ symbol "fixed64",
-      try $ KTSfixed32 <$ symbol "sfixed32",
-      try $ KTSfixed64 <$ symbol "sfixed64",
-      try $ KTBool <$ symbol "bool",
-      try $ KTString <$ symbol "string"
+    [ try $ Ast.KTInt32 <$ symbol "int32",
+      try $ Ast.KTInt64 <$ symbol "int64",
+      try $ Ast.KTUInt32 <$ symbol "uint32",
+      try $ Ast.KTUInt64 <$ symbol "uint64",
+      try $ Ast.KTSInt32 <$ symbol "sint32",
+      try $ Ast.KTSInt64 <$ symbol "sint64",
+      try $ Ast.KTFixed32 <$ symbol "fixed32",
+      try $ Ast.KTFixed64 <$ symbol "fixed64",
+      try $ Ast.KTSfixed32 <$ symbol "sfixed32",
+      try $ Ast.KTSfixed64 <$ symbol "sfixed64",
+      try $ Ast.KTBool <$ symbol "bool",
+      try $ Ast.KTString <$ symbol "string"
     ]
 
-parseMapFieldTypes :: Parser (KeyType, Type)
+parseMapFieldTypes :: Parser (Ast.KeyType, Ast.Type)
 parseMapFieldTypes = between (symbol "<") (symbol ">") ((,) <$> parseKeyType <*> (symbol "," *> parseFieldType))
 
-parseFieldInfo :: Parser (String, Int, [OptionDefinition])
+parseFieldInfo :: Parser (String, Int, [Ast.OptionDefinition])
 parseFieldInfo = (,,) <$> (T.unpack <$> ident) <*> (symbol "=" *> integer) <*> parseFieldOptions
 
-parseMapField :: Parser MapField
+parseMapField :: Parser Ast.MapField
 parseMapField = do
   _ <- symbol "map"
   (kt, vt) <- parseMapFieldTypes
   (fieldName, num, opts) <- parseFieldInfo
   _ <- consumeSemicolons
-  return $ MapField fieldName kt vt num opts
+  return $ Ast.MapField fieldName kt vt num opts
 
-parseOneOfElements :: Parser [OneOfFieldElement]
-parseOneOfElements = [] <$ some (symbol ";") <|> many (OFFieldDef <$> try parseFieldDefinition <|> OFOptDef <$> parseOptionDefinition)
+parseOneOfElements :: Parser [Ast.OneOfFieldElement]
+parseOneOfElements = [] <$ some (symbol ";") <|> many (Ast.OFFieldDef <$> try parseFieldDefinition <|> Ast.OFOptDef <$> parseOptionDefinition)
 
-parseOneOfField :: Parser OneOfField
+parseOneOfField :: Parser Ast.OneOfField
 parseOneOfField = do
   _ <- symbol "oneof"
   n <- T.unpack <$> ident
   e <- between (symbol "{") (symbol "}") parseOneOfElements
   _ <- many $ symbol ";"
-  return $ OneOfField n e
+  return $ Ast.OneOfField n e
 
-parseFieldType :: Parser Type
+parseFieldType :: Parser Ast.Type
 parseFieldType =
   choice
-    [ try $ TDouble <$ symbol "double",
-      try $ TFloat <$ symbol "float",
-      try $ TInt32 <$ symbol "int32",
-      try $ TInt64 <$ symbol "int64",
-      try $ TUInt32 <$ symbol "uint32",
-      try $ TUInt64 <$ symbol "uint64",
-      try $ TSInt32 <$ symbol "sint32",
-      try $ TSInt64 <$ symbol "sint64",
-      try $ TFixed32 <$ symbol "fixed32",
-      try $ TFixed64 <$ symbol "fixed64",
-      try $ TSfixed32 <$ symbol "sfixed32",
-      try $ TSfixed64 <$ symbol "sfixed64",
-      try $ TBool <$ symbol "bool",
-      try $ TString <$ symbol "string",
-      try $ TBytes <$ symbol "bytes",
-      try $ TMessageType . T.unpack <$> parseFullIdent
+    [ try $ Ast.TDouble <$ symbol "double",
+      try $ Ast.TFloat <$ symbol "float",
+      try $ Ast.TInt32 <$ symbol "int32",
+      try $ Ast.TInt64 <$ symbol "int64",
+      try $ Ast.TUInt32 <$ symbol "uint32",
+      try $ Ast.TUInt64 <$ symbol "uint64",
+      try $ Ast.TSInt32 <$ symbol "sint32",
+      try $ Ast.TSInt64 <$ symbol "sint64",
+      try $ Ast.TFixed32 <$ symbol "fixed32",
+      try $ Ast.TFixed64 <$ symbol "fixed64",
+      try $ Ast.TSfixed32 <$ symbol "sfixed32",
+      try $ Ast.TSfixed64 <$ symbol "sfixed64",
+      try $ Ast.TBool <$ symbol "bool",
+      try $ Ast.TString <$ symbol "string",
+      try $ Ast.TBytes <$ symbol "bytes",
+      try $ Ast.TMessageType . T.unpack <$> parseFullIdent
     ]
 
-parseFieldDefinition :: Parser FieldDefinition
+parseFieldDefinition :: Parser Ast.FieldDefinition
 parseFieldDefinition = do
   t <- parseFieldType
   (fieldName, num, opts) <- parseFieldInfo
   _ <- some $ symbol ";"
-  return $ FieldDefinition fieldName t num opts
+  return $ Ast.FieldDefinition fieldName t num opts
 
-parseNormalField :: Parser NormalField
+parseNormalField :: Parser Ast.NormalField
 parseNormalField = do
   r <- optional . try $ symbol "repeated"
   f <- parseFieldDefinition
-  return $ NormalField f (isJust r)
+  return $ Ast.NormalField f (isJust r)
+
+-- we need Ast.this intermediate type to able to parse different types of message elements
+data MessageElement
+  = MEOneF Ast.OneOfField
+  | MEMapF Ast.MapField
+  | MENorF Ast.NormalField
+  | MEMsg Ast.MessageDefinition
+  | MEEnum Ast.EnumDefinition
+  | MEOpt Ast.OptionDefinition
+  | MEReservedFieldStmt Ast.ReservedFieldStatement
 
 parseMessageElements :: Parser [MessageElement]
 parseMessageElements =
   [] <$ some (symbol ";")
     <|> many
       ( choice
-          [ NorF <$> try parseNormalField,
-            MapF <$> try parseMapField,
-            OneF <$> try parseOneOfField,
-            Msg <$> try parseMessageDefinition,
-            Enum <$> try parseEnumDefinition,
-            Opt <$> try parseOptionDefinition,
-            RsvFieldNums <$> try parseReservedFieldNumbersStatement,
-            RsvFieldNames <$> try parseReservedFieldNamesStatement
+          [ MENorF <$> try parseNormalField,
+            MEMapF <$> try parseMapField,
+            MEOneF <$> try parseOneOfField,
+            MEMsg <$> try parseMessageDefinition,
+            MEEnum <$> try parseEnumDefinition,
+            MEOpt <$> try parseOptionDefinition,
+            MEReservedFieldStmt <$> try parseReservedFieldNumbersStatement,
+            MEReservedFieldStmt <$> try parseReservedFieldNamesStatement
           ]
       )
 
-parseMessageDefinition :: Parser MessageDefinition
+--TODO change Text for Identifier type aliasj
+assembleMessageDefinition :: Text -> [MessageElement] -> Ast.MessageDefinition
+assembleMessageDefinition n e =
+  Ast.MessageDefinition
+    (T.unpack n)
+    [f | MEOneF f <- e]
+    [f | MEMapF f <- e]
+    [f | MENorF f <- e]
+    [m | MEMsg m <- e]
+    [m | MEEnum m <- e]
+    [o | MEOpt o <- e]
+    [r | MEReservedFieldStmt r <- e]
+
+parseMessageDefinition :: Parser Ast.MessageDefinition
 parseMessageDefinition = do
   _ <- symbol "message"
-  n <- T.unpack <$> ident
+  n <- ident
   e <- between (symbol "{") (symbol "}") parseMessageElements
   _ <- many $ symbol ";"
-  return $ MessageDefinition n e
+  return $ assembleMessageDefinition n e
 
-protoParser :: Parser ProtoFile
+protoParser :: Parser Ast.ProtoFile
 protoParser = do
   sy <- parseSyntax
   e <-
     many $
       choice
-        [ PackageSpec <$> try parsePackageSpecification,
+        [ Ast.PackageSpec <$> try parsePackageSpecification,
           try parseImportStatement,
-          OptionDef <$> try parseOptionDefinition,
-          EnumDef <$> try parseEnumDefinition,
-          MsgDef <$> try parseMessageDefinition
+          Ast.OptionDef <$> try parseOptionDefinition,
+          Ast.EnumDef <$> try parseEnumDefinition,
+          Ast.MsgDef <$> try parseMessageDefinition
         ]
   _ <- eof
-  return $ SyntaxStmt sy : e
+  return $ Ast.SyntaxStmt sy : e
 
-parseProto :: String -> String -> Either String ProtoFile
+parseProto :: String -> String -> Either String Ast.ProtoFile
 parseProto f i = case parse protoParser f (T.pack i) of
   Left b -> Left $ errorBundlePretty b
   -- TODO check if there are multiple package definitions present

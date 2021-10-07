@@ -10,6 +10,13 @@ type SyntaxStatement = String
 
 type FileName = String
 
+type Identifier = String
+
+type FieldNumber = Int
+
+type Repeated = Bool
+
+-- TODO add prefix to data constructors
 data Constant
   = Identifier String
   | FloatLit Float
@@ -85,22 +92,21 @@ data NormalField = NormalField
   }
   deriving (Eq, Show)
 
-data FieldNumberSpec = Single Int | Range Int Int deriving (Eq, Show)
+-- this is called a "range" in the protobuf specification, but it allows a single field to be a "range"
+-- hence I decided to call this "field number specification", to be more generic
+data FieldNumberSpec = FSSingle FieldNumber | FSRange FieldNumber FieldNumber deriving (Eq, Show)
 
-data MessageElement
-  = OneF OneOfField
-  | MapF MapField
-  | NorF NormalField
-  | Msg MessageDefinition
-  | Enum EnumDefinition
-  | Opt OptionDefinition
-  | RsvFieldNums [FieldNumberSpec]
-  | RsvFieldNames [String]
-  deriving (Eq, Show)
+data ReservedFieldStatement = RFNumbers [FieldNumberSpec] | RFNames [Identifier] deriving (Eq, Show)
 
 data MessageDefinition = MessageDefinition
-  { name :: String,
-    elements :: [MessageElement]
+  { name :: Identifier,
+    oneOfFields :: [OneOfField],
+    mapFields :: [MapField],
+    normalFields :: [NormalField],
+    messageDefs :: [MessageDefinition],
+    enumDefs :: [EnumDefinition],
+    options :: [OptionDefinition],
+    reservedFields :: [ReservedFieldStatement]
   }
   deriving (Eq, Show)
 

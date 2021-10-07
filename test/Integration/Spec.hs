@@ -26,29 +26,30 @@ expectedFileElements =
     MsgDef $
       MessageDefinition
         "Outer"
-        [ Opt ("(my_option).a", BoolLit True),
-          Msg $
-            MessageDefinition
-              "Inner"
-              [ NorF $ NormalField (FieldDefinition "ival" TInt64 1 []) False,
-                OneF $
-                  OneOfField
-                    "foo"
-                    [ OFFieldDef $ FieldDefinition "name" TString 4 [("a", BoolLit True)],
-                      OFOptDef ("java", FloatLit 5.0),
-                      OFFieldDef $ FieldDefinition "sub_message" (TMessageType "SubMessage") 9 []
-                    ]
-              ],
-          RsvFieldNums [Single 9, Range 9 11, Single 42],
-          NorF $
-            NormalField
-              (FieldDefinition "inner_message" (TMessageType "Inner") 2 [("r", Identifier "foo")])
-              True,
-          RsvFieldNames ["foo", "bar"],
-          NorF $ NormalField (FieldDefinition "enum_field" (TMessageType "EnumAllowingAlias") 3 []) False,
-          MapF $ MapField "my_map" KTInt32 TBytes 4 [("i", IntLit (-90))],
-          Enum $ EnumDefinition "MyEnum" [EnField $ EnumField "BLA" 2 []]
+        []
+        [MapField "my_map" KTInt32 TBytes 4 [("i", IntLit (-90))]]
+        [ NormalField (FieldDefinition "inner_message" (TMessageType "Inner") 2 [("r", Identifier "foo")]) True,
+          NormalField (FieldDefinition "enum_field" (TMessageType "EnumAllowingAlias") 3 []) False
         ]
+        [ MessageDefinition
+            "Inner"
+            [ OneOfField
+                "foo"
+                [ OFFieldDef $ FieldDefinition "name" TString 4 [("a", BoolLit True)],
+                  OFOptDef ("java", FloatLit 5.0),
+                  OFFieldDef $ FieldDefinition "sub_message" (TMessageType "SubMessage") 9 []
+                ]
+            ]
+            []
+            [NormalField (FieldDefinition "ival" TInt64 1 []) False]
+            []
+            []
+            []
+            []
+        ]
+        [EnumDefinition "MyEnum" [EnField $ EnumField "BLA" 2 []]]
+        [("(my_option).a", BoolLit True)]
+        [RFNumbers [FSSingle 9, FSRange 9 11, FSSingle 42], RFNames ["foo", "bar"]]
   ]
 
 spec :: Spec
