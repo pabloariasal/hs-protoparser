@@ -196,8 +196,8 @@ testMessageWithNormalFields =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ NorF $ NormalField (FieldDefinition "nested_message" (FTMessageType "foo.Bar") 2 []) False,
-                              NorF $ NormalField (FieldDefinition "samples" FTInt32 4 []) True
+                            [ NorF $ NormalField (FieldDefinition "nested_message" (TMessageType "foo.Bar") 2 []) False,
+                              NorF $ NormalField (FieldDefinition "samples" TInt32 4 []) True
                             ]
                       ]
     it "message with normal field with options" $
@@ -205,8 +205,8 @@ testMessageWithNormalFields =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [ NorF $ NormalField (FieldDefinition "foo" FTSInt32 4 [("o1", BoolLit True), ("o2", FloatLit (-5.0))]) False,
-                              NorF $ NormalField (FieldDefinition "bar" FTString 1 [("o3", IntLit (-9))]) False
+                            [ NorF $ NormalField (FieldDefinition "foo" TSInt32 4 [("o1", BoolLit True), ("o2", FloatLit (-5.0))]) False,
+                              NorF $ NormalField (FieldDefinition "bar" TString 1 [("o3", IntLit (-9))]) False
                             ]
                       ]
     it "fails if semicolon missing" $
@@ -249,8 +249,8 @@ testMessageWithOneOfFields =
                             [ OneF $
                                 OneOfField
                                   "foo"
-                                  [ OFFieldDef (FieldDefinition "name" FTString 4 []),
-                                    OFFieldDef (FieldDefinition "b" FTBytes 5 [])
+                                  [ OFFieldDef (FieldDefinition "name" TString 4 []),
+                                    OFFieldDef (FieldDefinition "b" TBytes 5 [])
                                   ]
                             ]
                       ]
@@ -262,7 +262,7 @@ testMessageWithOneOfFields =
                             [ OneF $
                                 OneOfField
                                   "foo"
-                                  [ OFFieldDef (FieldDefinition "b" FTSfixed32 5 []),
+                                  [ OFFieldDef (FieldDefinition "b" TSfixed32 5 []),
                                     OFOptDef ("opt", StringLit "value")
                                   ]
                             ]
@@ -278,7 +278,7 @@ testMessageWithOneOfFields =
                                   [ OFFieldDef
                                       ( FieldDefinition
                                           "name"
-                                          FTString
+                                          TString
                                           4
                                           [("o1", BoolLit True), ("o2", FloatLit (-5.0))]
                                       )
@@ -309,14 +309,14 @@ testMessageWithMapFields =
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [MapF $ MapField "projects" KTString (FTMessageType "Project") 3 []]
+                            [MapF $ MapField "projects" KTString (TMessageType "Project") 3 []]
                       ]
     it "message with options" $
       runWithSyntax "message M { map<bool, bool> projects = 3 [o1=42,o2=false]; }"
         `shouldParse` [ MsgDef $
                           MessageDefinition
                             "M"
-                            [MapF $ MapField "projects" KTBool FTBool 3 [("o1", IntLit 42), ("o2", BoolLit False)]]
+                            [MapF $ MapField "projects" KTBool TBool 3 [("o1", IntLit 42), ("o2", BoolLit False)]]
                       ]
     it "fails if ',' is missing" $
       runParser `shouldFailOn` addSyntaxStatement "message M { map< string  Project > projects\n =   3; }"

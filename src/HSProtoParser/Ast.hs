@@ -20,34 +20,35 @@ data Constant
 
 data AccessQualifier = Public | Weak deriving (Eq, Show)
 
-data FieldType
-  = FTDouble
-  | FTFloat
-  | FTInt32
-  | FTInt64
-  | FTUInt32
-  | FTUInt64
-  | FTSInt32
-  | FTSInt64
-  | FTFixed32
-  | FTFixed64
-  | FTSfixed32
-  | FTSfixed64
-  | FTBool
-  | FTString
-  | FTBytes
-  | FTMessageType String
+data Type
+  = TDouble
+  | TFloat
+  | TInt32
+  | TInt64
+  | TUInt32
+  | TUInt64
+  | TSInt32
+  | TSInt64
+  | TFixed32
+  | TFixed64
+  | TSfixed32
+  | TSfixed64
+  | TBool
+  | TString
+  | TBytes
+  | TMessageType String
   deriving (Eq, Show)
 
 data FieldDefinition = FieldDefinition
   { name :: String,
-    fieldType :: FieldType,
+    fieldType :: Type,
     fieldNumber :: Int,
     options :: [OptionDefinition]
   }
   deriving (Eq, Show)
 
 data OneOfFieldElement = OFFieldDef FieldDefinition | OFOptDef OptionDefinition deriving (Eq, Show)
+
 data OneOfField = OneOfField
   { name :: String,
     elements :: [OneOfFieldElement]
@@ -72,7 +73,7 @@ data KeyType
 data MapField = MapField
   { name :: String,
     keyType :: KeyType,
-    valueType :: FieldType,
+    valueType :: Type,
     fieldNumber :: Int,
     options :: [OptionDefinition]
   }

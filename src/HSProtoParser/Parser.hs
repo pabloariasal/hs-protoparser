@@ -174,7 +174,7 @@ parseKeyType =
       try $ KTString <$ symbol "string"
     ]
 
-parseMapFieldTypes :: Parser (KeyType, FieldType)
+parseMapFieldTypes :: Parser (KeyType, Type)
 parseMapFieldTypes = between (symbol "<") (symbol ">") ((,) <$> parseKeyType <*> (symbol "," *> parseFieldType))
 
 parseFieldInfo :: Parser (String, Int, [OptionDefinition])
@@ -199,25 +199,25 @@ parseOneOfField = do
   _ <- many $ symbol ";"
   return $ OneOfField n e
 
-parseFieldType :: Parser FieldType
+parseFieldType :: Parser Type
 parseFieldType =
   choice
-    [ try $ FTDouble <$ symbol "double",
-      try $ FTFloat <$ symbol "float",
-      try $ FTInt32 <$ symbol "int32",
-      try $ FTInt64 <$ symbol "int64",
-      try $ FTUInt32 <$ symbol "uint32",
-      try $ FTUInt64 <$ symbol "uint64",
-      try $ FTSInt32 <$ symbol "sint32",
-      try $ FTSInt64 <$ symbol "sint64",
-      try $ FTFixed32 <$ symbol "fixed32",
-      try $ FTFixed64 <$ symbol "fixed64",
-      try $ FTSfixed32 <$ symbol "sfixed32",
-      try $ FTSfixed64 <$ symbol "sfixed64",
-      try $ FTBool <$ symbol "bool",
-      try $ FTString <$ symbol "string",
-      try $ FTBytes <$ symbol "bytes",
-      try $ FTMessageType . T.unpack <$> parseFullIdent
+    [ try $ TDouble <$ symbol "double",
+      try $ TFloat <$ symbol "float",
+      try $ TInt32 <$ symbol "int32",
+      try $ TInt64 <$ symbol "int64",
+      try $ TUInt32 <$ symbol "uint32",
+      try $ TUInt64 <$ symbol "uint64",
+      try $ TSInt32 <$ symbol "sint32",
+      try $ TSInt64 <$ symbol "sint64",
+      try $ TFixed32 <$ symbol "fixed32",
+      try $ TFixed64 <$ symbol "fixed64",
+      try $ TSfixed32 <$ symbol "sfixed32",
+      try $ TSfixed64 <$ symbol "sfixed64",
+      try $ TBool <$ symbol "bool",
+      try $ TString <$ symbol "string",
+      try $ TBytes <$ symbol "bytes",
+      try $ TMessageType . T.unpack <$> parseFullIdent
     ]
 
 parseFieldDefinition :: Parser FieldDefinition

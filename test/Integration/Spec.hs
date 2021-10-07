@@ -30,23 +30,23 @@ expectedFileElements =
           Msg $
             MessageDefinition
               "Inner"
-              [ NorF $ NormalField (FieldDefinition "ival" FTInt64 1 []) False,
+              [ NorF $ NormalField (FieldDefinition "ival" TInt64 1 []) False,
                 OneF $
                   OneOfField
                     "foo"
-                    [ OFFieldDef $ FieldDefinition "name" FTString 4 [("a", BoolLit True)],
+                    [ OFFieldDef $ FieldDefinition "name" TString 4 [("a", BoolLit True)],
                       OFOptDef ("java", FloatLit 5.0),
-                      OFFieldDef $ FieldDefinition "sub_message" (FTMessageType "SubMessage") 9 []
+                      OFFieldDef $ FieldDefinition "sub_message" (TMessageType "SubMessage") 9 []
                     ]
               ],
           RsvFieldNums [Single 9, Range 9 11, Single 42],
           NorF $
             NormalField
-              (FieldDefinition "inner_message" (FTMessageType "Inner") 2 [("r", Identifier "foo")])
+              (FieldDefinition "inner_message" (TMessageType "Inner") 2 [("r", Identifier "foo")])
               True,
           RsvFieldNames ["foo", "bar"],
-          NorF $ NormalField (FieldDefinition "enum_field" (FTMessageType "EnumAllowingAlias") 3 []) False,
-          MapF $ MapField "my_map" KTInt32 FTBytes 4 [("i", IntLit (-90))],
+          NorF $ NormalField (FieldDefinition "enum_field" (TMessageType "EnumAllowingAlias") 3 []) False,
+          MapF $ MapField "my_map" KTInt32 TBytes 4 [("i", IntLit (-90))],
           Enum $ EnumDefinition "MyEnum" [EnField $ EnumField "BLA" 2 []]
         ]
   ]
