@@ -12,12 +12,12 @@ import Data.Scientific (toRealFloat)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Void
--- import Text.Megaparsec.Debug
-
-import HSProtoParser.Ast qualified as Ast
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
+-- import Text.Megaparsec.Debug
+
+import HSProtoParser.Ast qualified as Ast
 
 type Parser = Parsec Void Text
 

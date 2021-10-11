@@ -16,7 +16,6 @@ type FieldNumber = Int
 
 type Repeated = Bool
 
--- TODO add prefix to data constructors
 data Constant
   = CIdentifier String
   | CFloatLit Float
