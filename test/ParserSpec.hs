@@ -83,37 +83,37 @@ testOptionDefinition =
   describe "[Parsing] Option Definitions" $ do
     it "string literals" $
       runWithSyntax "option java_package = \"com.example.foo\"      ;;"
-        `shouldParse` [OptionDef ("java_package", StringLit "com.example.foo")]
+        `shouldParse` [OptionDef ("java_package", CStringLit "com.example.foo")]
     it "string literals" $
       runWithSyntax "option java_package = \"com.'example'.foo\";;"
-        `shouldParse` [OptionDef ("java_package", StringLit "com.'example'.foo")]
+        `shouldParse` [OptionDef ("java_package", CStringLit "com.'example'.foo")]
     it "identifiers" $
       runWithSyntax "option java_package =    foo.bar;"
-        `shouldParse` [OptionDef ("java_package", Identifier "foo.bar")]
+        `shouldParse` [OptionDef ("java_package", CIdentifier "foo.bar")]
     it "int literals" $
       runWithSyntax "option num1 = -5;option num2=+42;option num3=666;"
-        `shouldParse` [OptionDef ("num1", IntLit (-5)), OptionDef ("num2", IntLit 42), OptionDef ("num3", IntLit 666)]
+        `shouldParse` [OptionDef ("num1", CIntLit (-5)), OptionDef ("num2", CIntLit 42), OptionDef ("num3", CIntLit 666)]
     it "float literals" $
       runWithSyntax "option n1=+4.4;option n2 = -1e5;option n3=+10.0E-1;option n4=666;"
-        `shouldParse` [ OptionDef ("n1", FloatLit 4.4),
-                        OptionDef ("n2", FloatLit (-100000)),
-                        OptionDef ("n3", FloatLit 1.0),
-                        OptionDef ("n4", IntLit 666)
+        `shouldParse` [ OptionDef ("n1", CFloatLit 4.4),
+                        OptionDef ("n2", CFloatLit (-100000)),
+                        OptionDef ("n3", CFloatLit 1.0),
+                        OptionDef ("n4", CIntLit 666)
                       ]
     it "boolean literals" $
       runWithSyntax "option b1 = false     ;    option b2=true;;"
-        `shouldParse` [OptionDef ("b1", BoolLit False), OptionDef ("b2", BoolLit True)]
+        `shouldParse` [OptionDef ("b1", CBoolLit False), OptionDef ("b2", CBoolLit True)]
     it "combined" $
       runWithSyntax "option fl=-4.4;option id = foo;option il=42;option sl=\"666\";option bl=false;"
-        `shouldParse` [ OptionDef ("fl", FloatLit (-4.4)),
-                        OptionDef ("id", Identifier "foo"),
-                        OptionDef ("il", IntLit 42),
-                        OptionDef ("sl", StringLit "666"),
-                        OptionDef ("bl", BoolLit False)
+        `shouldParse` [ OptionDef ("fl", CFloatLit (-4.4)),
+                        OptionDef ("id", CIdentifier "foo"),
+                        OptionDef ("il", CIntLit 42),
+                        OptionDef ("sl", CStringLit "666"),
+                        OptionDef ("bl", CBoolLit False)
                       ]
     it "parentherized option name" $
       runWithSyntax "option (  custom_option\n).foo.bar = false;"
-        `shouldParse` [OptionDef ("(custom_option).foo.bar", BoolLit False)]
+        `shouldParse` [OptionDef ("(custom_option).foo.bar", CBoolLit False)]
     it "fails if parenthesis is not on first identifier" $
       runParser `shouldFailOn` addSyntaxStatement "option foo.(a) = false;"
     it "fails if closing parenthesis is missing" $
@@ -140,21 +140,21 @@ testEnumDefinition =
         `shouldParse` [ EnumDef $
                           EnumDefinition
                             "Enum"
-                            [EnOpt ("allow_alias", BoolLit True), EnField (EnumField "UNKNOWN" 0 [])]
+                            [EnOpt ("allow_alias", CBoolLit True), EnField (EnumField "UNKNOWN" 0 [])]
                       ]
     it "parse enum with options (2/2)" $
       runWithSyntax "enum Enum\n {option allow_alias=false;UNKNOWN = 0; }"
         `shouldParse` [ EnumDef $
                           EnumDefinition
                             "Enum"
-                            [EnOpt ("allow_alias", BoolLit False), EnField (EnumField "UNKNOWN" 0 [])]
+                            [EnOpt ("allow_alias", CBoolLit False), EnField (EnumField "UNKNOWN" 0 [])]
                       ]
     it "parse enum with field options" $
       runWithSyntax "enum Enum\n {RUNNING = 2 [(custom_option) = \"foo\"   , my_int=6   ];}"
         `shouldParse` [ EnumDef $
                           EnumDefinition
                             "Enum"
-                            [EnField (EnumField "RUNNING" 2 [("(custom_option)", StringLit "foo"), ("my_int", IntLit 6)])]
+                            [EnField (EnumField "RUNNING" 2 [("(custom_option)", CStringLit "foo"), ("my_int", CIntLit 6)])]
                       ]
     it "original order of enum fields and options is preserved" $
       runWithSyntax "enum Enum\n {\nf1 = 0;\n;option o1 = bla;; f2 = 1; option o2 = true; f3=2; option o3=false;\n}"
@@ -162,11 +162,11 @@ testEnumDefinition =
                           EnumDefinition
                             "Enum"
                             [ EnField (EnumField "f1" 0 []),
-                              EnOpt ("o1", Identifier "bla"),
+                              EnOpt ("o1", CIdentifier "bla"),
                               EnField (EnumField "f2" 1 []),
-                              EnOpt ("o2", BoolLit True),
+                              EnOpt ("o2", CBoolLit True),
                               EnField (EnumField "f3" 2 []),
-                              EnOpt ("o3", BoolLit False)
+                              EnOpt ("o3", CBoolLit False)
                             ]
                       ]
     it "fails if closing square bracket is missing" $
@@ -213,8 +213,8 @@ testMessageWithNormalFields =
                             "M"
                             []
                             []
-                            [ NormalField (FieldDefinition "foo" TSInt32 4 [("o1", BoolLit True), ("o2", FloatLit (-5.0))]) False,
-                              NormalField (FieldDefinition "bar" TString 1 [("o3", IntLit (-9))]) False
+                            [ NormalField (FieldDefinition "foo" TSInt32 4 [("o1", CBoolLit True), ("o2", CFloatLit (-5.0))]) False,
+                              NormalField (FieldDefinition "bar" TString 1 [("o3", CIntLit (-9))]) False
                             ]
                             []
                             []
@@ -289,7 +289,7 @@ testMessageWithOneOfFields =
                             [ OneOfField
                                 "foo"
                                 [ OFFieldDef (FieldDefinition "b" TSfixed32 5 []),
-                                  OFOptDef ("opt", StringLit "value")
+                                  OFOptDef ("opt", CStringLit "value")
                                 ]
                             ]
                             []
@@ -311,7 +311,7 @@ testMessageWithOneOfFields =
                                         "name"
                                         TString
                                         4
-                                        [("o1", BoolLit True), ("o2", FloatLit (-5.0))]
+                                        [("o1", CBoolLit True), ("o2", CFloatLit (-5.0))]
                                     )
                                 ]
                             ]
@@ -338,7 +338,7 @@ testMessageWithOptions =
                             []
                             []
                             []
-                            [("(my_option).a", IntLit 42), ("b", BoolLit False)]
+                            [("(my_option).a", CIntLit 42), ("b", CBoolLit False)]
                             []
                       ]
     it "fails if option is not correct" $
@@ -366,7 +366,7 @@ testMessageWithMapFields =
                           MessageDefinition
                             "M"
                             []
-                            [MapField "projects" KTBool TBool 3 [("o1", IntLit 42), ("o2", BoolLit False)]]
+                            [MapField "projects" KTBool TBool 3 [("o1", CIntLit 42), ("o2", CBoolLit False)]]
                             []
                             []
                             []
@@ -410,7 +410,7 @@ testMessageWithEnums =
                             [ EnumDefinition "E1" [EnField (EnumField "A" 0 [])],
                               EnumDefinition "E2" []
                             ]
-                            [ ("o", Identifier "foo")
+                            [ ("o", CIdentifier "foo")
                             ]
                             []
                       ]

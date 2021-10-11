@@ -13,30 +13,30 @@ expectedFileElements =
     EnumDef $
       EnumDefinition
         "EnumAllowingAlias"
-        [ EnOpt ("allow_alias", BoolLit True),
+        [ EnOpt ("allow_alias", CBoolLit True),
           EnField $ EnumField "UNKNOWN" 0 [],
           EnField $ EnumField "STARTED" 1 [],
           EnField $
             EnumField
               "RUNNING"
               2
-              [("(custom_option)", StringLit "hello world"), ("my_opt", IntLit 42)]
+              [("(custom_option)", CStringLit "hello world"), ("my_opt", CIntLit 42)]
         ],
-    OptionDef ("java_package", StringLit "com.example.foo"),
+    OptionDef ("java_package", CStringLit "com.example.foo"),
     MsgDef $
       MessageDefinition
         "Outer"
         []
-        [MapField "my_map" KTInt32 TBytes 4 [("i", IntLit (-90))]]
-        [ NormalField (FieldDefinition "inner_message" (TMessageType "Inner") 2 [("r", Identifier "foo")]) True,
+        [MapField "my_map" KTInt32 TBytes 4 [("i", CIntLit (-90))]]
+        [ NormalField (FieldDefinition "inner_message" (TMessageType "Inner") 2 [("r", CIdentifier "foo")]) True,
           NormalField (FieldDefinition "enum_field" (TMessageType "EnumAllowingAlias") 3 []) False
         ]
         [ MessageDefinition
             "Inner"
             [ OneOfField
                 "foo"
-                [ OFFieldDef $ FieldDefinition "name" TString 4 [("a", BoolLit True)],
-                  OFOptDef ("java", FloatLit 5.0),
+                [ OFFieldDef $ FieldDefinition "name" TString 4 [("a", CBoolLit True)],
+                  OFOptDef ("java", CFloatLit 5.0),
                   OFFieldDef $ FieldDefinition "sub_message" (TMessageType "SubMessage") 9 []
                 ]
             ]
@@ -48,7 +48,7 @@ expectedFileElements =
             []
         ]
         [EnumDefinition "MyEnum" [EnField $ EnumField "BLA" 2 []]]
-        [("(my_option).a", BoolLit True)]
+        [("(my_option).a", CBoolLit True)]
         [RFNumbers [FSSingle 9, FSRange 9 11, FSSingle 42], RFNames ["foo", "bar"]]
   ]
 

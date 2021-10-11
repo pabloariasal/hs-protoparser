@@ -18,11 +18,11 @@ type Repeated = Bool
 
 -- TODO add prefix to data constructors
 data Constant
-  = Identifier String
-  | FloatLit Float
-  | IntLit Int
-  | StringLit String
-  | BoolLit Bool
+  = CIdentifier String
+  | CFloatLit Float
+  | CIntLit Int
+  | CStringLit String
+  | CBoolLit Bool
   deriving (Eq, Show)
 
 data AccessQualifier = Public | Weak deriving (Eq, Show)

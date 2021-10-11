@@ -92,11 +92,11 @@ parseImportStatement = do
 parseConstant :: Parser Ast.Constant
 parseConstant =
   choice
-    [ Ast.BoolLit <$> try boolLit,
-      Ast.StringLit . T.unpack <$> try stringLiteral,
-      Ast.Identifier . T.unpack <$> try parseFullIdent,
-      Ast.IntLit <$> try signedInteger,
-      Ast.FloatLit <$> try signedFloat
+    [ Ast.CBoolLit <$> try boolLit,
+      Ast.CStringLit . T.unpack <$> try stringLiteral,
+      Ast.CIdentifier . T.unpack <$> try parseFullIdent,
+      Ast.CIntLit <$> try signedInteger,
+      Ast.CFloatLit <$> try signedFloat
     ]
 
 parseOptionName :: Parser Text
