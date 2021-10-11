@@ -520,38 +520,41 @@ testNestedMessages =
   describe "[Parsing] Nested Message Definitions" $ do
     it "message inside message" $
       runWithSyntax "message Outer { message Inner {} }"
-        `shouldParse` [MsgDef $
-                       MessageDefinition
-                       "Outer"
-                       []
-                       []
-                       []
-                       [MessageDefinition "Inner" [] [] [] [] [] [] []]
-                       []
-                       []
-                       []]
+        `shouldParse` [ MsgDef $
+                          MessageDefinition
+                            "Outer"
+                            []
+                            []
+                            []
+                            [MessageDefinition "Inner" [] [] [] [] [] [] []]
+                            []
+                            []
+                            []
+                      ]
     it "multiple nested messages" $
       runWithSyntax "message O1 { message Inner{} ;} \n; message O2{}"
         `shouldParse` [ MsgDef
-                        (MessageDefinition
-                        "O1"
-                        []
-                        []
-                        []
-                        [MessageDefinition "Inner" [] [] [] [] [] [] []]
-                        []
-                        []
-                        []),
+                          ( MessageDefinition
+                              "O1"
+                              []
+                              []
+                              []
+                              [MessageDefinition "Inner" [] [] [] [] [] [] []]
+                              []
+                              []
+                              []
+                          ),
                         MsgDef
-                        (MessageDefinition
-                        "O2"
-                        []
-                        []
-                        []
-                        []
-                        []
-                        []
-                        [])
+                          ( MessageDefinition
+                              "O2"
+                              []
+                              []
+                              []
+                              []
+                              []
+                              []
+                              []
+                          )
                       ]
 
 spec :: Spec
