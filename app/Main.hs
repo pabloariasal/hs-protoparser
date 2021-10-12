@@ -10,18 +10,6 @@ import Text.Pretty.Simple (pPrint)
 main :: IO ()
 main = getArgs >>= parseArgs
 
--- main = do
---     f <- readFile "example.proto"
---     case parseProto "example.proto" f of
---         Left e -> putStr e >> exitFailure
---         Right t -> putStr show (getMessages t) >> exitSuccess
-
--- getMessages :: ProtoFile -> [String]
--- getMessages = foldr f []
---   where
---     f (MsgDef (MessageDefinition n _)) acc = n:acc
---     f _ acc = acc
-
 parseArgs :: [String] -> IO ()
 parseArgs ["--help"] = printUsage
 parseArgs [] = runParser "" getContents

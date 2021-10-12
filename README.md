@@ -2,7 +2,47 @@
 
 Parser for Protocol Buffer files written in Haskell.
 
-![](screenshot.png)
+```haskell
+> cat file.proto
+syntax = "proto3";
+message M
+{
+    string name = 1;
+}
+
+> stack exec hs-protoparser-exe file.proto
+ProtoFile
+    { syntax = "proto3"
+    , packages = []
+    , imports = []
+    , options = []
+    , messages =
+        [ MessageDefinition
+            { name = "M"
+            , oneOfFields = []
+            , mapFields = []
+            , normalFields =
+                [ NormalField
+                    { field = FieldDefinition
+                        { name = "name"
+                        , fieldType = TString
+                        , fieldNumber = 1
+                        , options = []
+                        }
+                    , repeated = False
+                    }
+                ]
+            , messageDefs = []
+            , enumDefs = []
+            , options = []
+            , reservedFields = []
+            }
+        ]
+    , enums = []
+    , services = []
+    }
+
+```
 
 # Installation
 
@@ -16,10 +56,11 @@ extra-deps:
 
 # Usage
 
-Import the `Parser` module and call `parseProto`, providing the contents to be parsed.
-For example, the following program prints the number of messages defined in the protocol buffer file:
+Call `parseProto` from the `Parser` module with the input:
 
 ```haskell
+{-# LANGUAGE DuplicateRecordFields #-}
+
 import HSProtoParser.Parser (parseProto)
 import HSProtoParser.Ast
 import System.Exit
@@ -27,12 +68,21 @@ import System.Exit
 main = do
     f <- readFile "example.proto"
     case parseProto "example.proto" f of
-        Left e -> putStr e >> exitFailure
-        Right t -> putStr show (getMessages t) >> exitSuccess
+        Left e -> print e >> exitFailure
+        Right t -> print (map n (messages t)) >> exitSuccess
+    where
+        n :: MessageDefinition -> String
+        n = name
+```
+This will print the names of all messages defined in the input proto:
 
-getMessages :: ProtoFile -> [String]
-getMessages = foldr f []
-  where
-    f (MsgDef (MessageDefinition n _)) acc = n:acc
-    f _ acc = acc
+```bash
+> cat example.proto
+syntax = "proto3";
+message A {}
+message B {}
+message C {}
+
+> stack run
+["A", "B", "C"]
 ```
