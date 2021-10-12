@@ -18,8 +18,6 @@ data Constant
   | CBoolLit Bool
   deriving (Eq, Show)
 
-data AccessQualifier = Public | Weak deriving (Eq, Show)
-
 data Type
   = TDouble
   | TFloat
@@ -126,6 +124,8 @@ type OptionDefinition = (Key, Value)
 
 type FileName = String
 
+data AccessQualifier = Public | Weak deriving (Eq, Show)
+
 data ImportStatement = ImportStatement {access :: Maybe AccessQualifier, file :: FileName} deriving (Eq, Show)
 
 type PackageSpecification = String
@@ -140,4 +140,5 @@ data ProtoFile = ProtoFile
     messages :: [MessageDefinition],
     enums :: [EnumDefinition],
     services :: [ServiceDefinition]
-  } deriving (Eq, Show)
+  }
+  deriving (Eq, Show)
