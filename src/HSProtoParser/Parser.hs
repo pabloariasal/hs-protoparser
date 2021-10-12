@@ -12,12 +12,12 @@ import Data.Scientific (toRealFloat)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Void
-import Text.Megaparsec
-import Text.Megaparsec.Char
-import Text.Megaparsec.Char.Lexer qualified as L
 -- import Text.Megaparsec.Debug
 
 import HSProtoParser.Ast qualified as Ast
+import Text.Megaparsec
+import Text.Megaparsec.Char
+import Text.Megaparsec.Char.Lexer qualified as L
 
 type Parser = Parsec Void Text
 
@@ -81,13 +81,13 @@ parseSyntax = do
 parsePackageSpecification :: Parser Ast.PackageSpecification
 parsePackageSpecification = T.unpack <$> (symbol "package" *> parseFullIdent <* consumeSemicolons)
 
-parseImportStatement :: Parser Ast.ProtoFileElement
+parseImportStatement :: Parser Ast.ImportStatement
 parseImportStatement = do
   _ <- symbol "import"
   access <- optional . try $ (Ast.Weak <$ symbol "weak" <|> Ast.Public <$ symbol "public")
   path <- stringLiteral
   _ <- consumeSemicolons
-  return $ Ast.ImportStmt access (T.unpack path)
+  return $ Ast.ImportStatement access (T.unpack path)
 
 parseConstant :: Parser Ast.Constant
 parseConstant =
@@ -122,6 +122,8 @@ parseFieldOption = (,) <$> (T.unpack <$> parseOptionName <* symbol "=") <*> pars
 parseFieldOptions :: Parser [Ast.OptionDefinition]
 parseFieldOptions = between (symbol "[") (symbol "]") (parseFieldOption `sepBy1` symbol ",") <|> [] <$ lookAhead (symbol ";")
 
+data EnumElement = EOpt Ast.OptionDefinition | EField Ast.EnumField
+
 parseEnumField :: Parser Ast.EnumField
 parseEnumField = do
   n <- T.unpack <$> ident
@@ -131,8 +133,11 @@ parseEnumField = do
   _ <- consumeSemicolons
   return (Ast.EnumField n v o)
 
-parseEnumElements :: Parser [Ast.EnumElement]
-parseEnumElements = ([] <$ some (symbol ";")) <|> many (Ast.EnOpt <$> parseOptionDefinition <|> Ast.EnField <$> parseEnumField)
+parseEnumElements :: Parser [EnumElement]
+parseEnumElements = ([] <$ some (symbol ";")) <|> many (EOpt <$> parseOptionDefinition <|> EField <$> parseEnumField)
+
+assembleEnum :: String -> [EnumElement] -> Ast.EnumDefinition
+assembleEnum n e = Ast.EnumDefinition n [o | EOpt o <- e] [f | EField f <- e]
 
 parseEnumDefinition :: Parser Ast.EnumDefinition
 parseEnumDefinition = do
@@ -140,7 +145,7 @@ parseEnumDefinition = do
   n <- T.unpack <$> ident
   e <- between (symbol "{") (symbol "}") parseEnumElements
   _ <- many $ symbol ";"
-  return (Ast.EnumDefinition n e)
+  return $ assembleEnum n e
 
 parseFieldNumberSpec :: Parser Ast.FieldNumberSpec
 parseFieldNumberSpec = try singleNum <|> range
@@ -188,8 +193,13 @@ parseMapField = do
   _ <- consumeSemicolons
   return $ Ast.MapField fieldName kt vt num opts
 
-parseOneOfElements :: Parser [Ast.OneOfFieldElement]
-parseOneOfElements = [] <$ some (symbol ";") <|> many (Ast.OFFieldDef <$> try parseFieldDefinition <|> Ast.OFOptDef <$> parseOptionDefinition)
+data OneOfFieldElement = OFFieldDef Ast.FieldDefinition | OFOptDef Ast.OptionDefinition
+
+parseOneOfElements :: Parser [OneOfFieldElement]
+parseOneOfElements = [] <$ some (symbol ";") <|> many (OFFieldDef <$> try parseFieldDefinition <|> OFOptDef <$> parseOptionDefinition)
+
+assembleOneOfField :: String -> [OneOfFieldElement] -> Ast.OneOfField
+assembleOneOfField n e = Ast.OneOfField n [f | OFFieldDef f <- e] [o | OFOptDef o <- e]
 
 parseOneOfField :: Parser Ast.OneOfField
 parseOneOfField = do
@@ -197,7 +207,7 @@ parseOneOfField = do
   n <- T.unpack <$> ident
   e <- between (symbol "{") (symbol "}") parseOneOfElements
   _ <- many $ symbol ";"
-  return $ Ast.OneOfField n e
+  return $ assembleOneOfField n e
 
 parseFieldType :: Parser Ast.Type
 parseFieldType =
@@ -280,20 +290,36 @@ parseMessageDefinition = do
   _ <- many $ symbol ";"
   return $ assembleMessageDefinition n e
 
+-- TODO implement
+-- parseServiceDefinition :: Parser Ast.ServiceDefinition
+-- parseServiceDefinition = undefined
+
+data ProtoFileElement
+  = PEPackageSpec Ast.PackageSpecification
+  | PEImportStmt Ast.ImportStatement
+  | PEOptionDef Ast.OptionDefinition
+  | PEMsgDef Ast.MessageDefinition
+  | PEEnumDef Ast.EnumDefinition
+  | PEServiceDef Ast.ServiceDefinition
+
+assembleFile :: Ast.SyntaxStatement -> [ProtoFileElement] -> Ast.ProtoFile
+assembleFile s e = Ast.ProtoFile s [p | PEPackageSpec p <- e] [p | PEImportStmt p <- e] [o | PEOptionDef o <- e] [m | PEMsgDef m <- e] [en | PEEnumDef en <- e] [se | PEServiceDef se <- e]
+
 protoParser :: Parser Ast.ProtoFile
 protoParser = do
   sy <- parseSyntax
   e <-
     many $
       choice
-        [ Ast.PackageSpec <$> try parsePackageSpecification,
-          try parseImportStatement,
-          Ast.OptionDef <$> try parseOptionDefinition,
-          Ast.EnumDef <$> try parseEnumDefinition,
-          Ast.MsgDef <$> try parseMessageDefinition
+        [ PEPackageSpec <$> try parsePackageSpecification,
+          PEImportStmt <$> try parseImportStatement,
+          PEOptionDef <$> try parseOptionDefinition,
+          PEEnumDef <$> try parseEnumDefinition,
+          PEMsgDef <$> try parseMessageDefinition
+          -- PEServiceDef <$> parseServiceDefinition
         ]
   _ <- eof
-  return $ Ast.SyntaxStmt sy : e
+  return $ assembleFile sy e
 
 parseProto :: String -> String -> Either String Ast.ProtoFile
 parseProto f i = case parse protoParser f (T.pack i) of

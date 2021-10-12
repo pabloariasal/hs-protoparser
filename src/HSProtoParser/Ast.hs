@@ -4,12 +4,6 @@
 
 module HSProtoParser.Ast where
 
-type PackageSpecification = String
-
-type SyntaxStatement = String
-
-type FileName = String
-
 type Identifier = String
 
 type FieldNumber = Int
@@ -53,11 +47,10 @@ data FieldDefinition = FieldDefinition
   }
   deriving (Eq, Show)
 
-data OneOfFieldElement = OFFieldDef FieldDefinition | OFOptDef OptionDefinition deriving (Eq, Show)
-
 data OneOfField = OneOfField
   { name :: String,
-    elements :: [OneOfFieldElement]
+    fields :: [FieldDefinition],
+    options :: [OptionDefinition]
   }
   deriving (Eq, Show)
 
@@ -116,26 +109,35 @@ data EnumField = EnumField
   }
   deriving (Eq, Show)
 
-data EnumElement = EnOpt OptionDefinition | EnField EnumField deriving (Eq, Show)
-
 data EnumDefinition = EnumDefinition
   { name :: String,
-    elements :: [EnumElement]
+    options :: [OptionDefinition],
+    fields :: [EnumField]
   }
   deriving (Eq, Show)
 
 data ServiceDefinition = ServiceDefinition deriving (Eq, Show)
 
-type OptionDefinition = (String, Constant)
+type Key = String
 
-data ProtoFileElement
-  = SyntaxStmt SyntaxStatement
-  | PackageSpec PackageSpecification
-  | ImportStmt (Maybe AccessQualifier) FileName
-  | OptionDef OptionDefinition
-  | MsgDef MessageDefinition
-  | EnumDef EnumDefinition
-  | ServiceDef ServiceDefinition
-  deriving (Show, Eq)
+type Value = Constant
 
-type ProtoFile = [ProtoFileElement]
+type OptionDefinition = (Key, Value)
+
+type FileName = String
+
+data ImportStatement = ImportStatement {access :: Maybe AccessQualifier, file :: FileName} deriving (Eq, Show)
+
+type PackageSpecification = String
+
+type SyntaxStatement = String
+
+data ProtoFile = ProtoFile
+  { syntax :: SyntaxStatement,
+    packages :: [PackageSpecification],
+    imports :: [ImportStatement],
+    options :: [OptionDefinition],
+    messages :: [MessageDefinition],
+    enums :: [EnumDefinition],
+    services :: [ServiceDefinition]
+  } deriving (Eq, Show)
