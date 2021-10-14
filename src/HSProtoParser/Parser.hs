@@ -24,9 +24,6 @@ type Parser = Parsec Void Text
 sc :: Parser ()
 sc = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
 
-consumeSemicolons :: Parser ()
-consumeSemicolons = () <$ some (symbol ";")
-
 -- match verbatim strings, consuming trailing whitespace
 symbol :: Text -> Parser Text
 symbol = L.symbol sc
@@ -65,7 +62,11 @@ ident = (T.pack <$> p) <* sc
 boolLit :: Parser Bool
 boolLit = (True <$ symbol "true" <|> False <$ "false") <* sc
 
+consumeSemicolons :: Parser ()
+consumeSemicolons = () <$ some (symbol ";")
+
 -- '.' separated idents
+-- TODO model this a [Identifier] maybe?
 parseFullIdent :: Parser Text
 parseFullIdent = T.intercalate (T.singleton '.') <$> (ident `sepBy1` char '.')
 
@@ -178,33 +179,32 @@ parseKeyType =
       try $ Ast.KTString <$ symbol "string"
     ]
 
-parseMapFieldTypes :: Parser (Ast.KeyType, Ast.Type)
-parseMapFieldTypes = between (symbol "<") (symbol ">") ((,) <$> parseKeyType <*> (symbol "," *> parseFieldType))
-
+-- parses a field consisting of a name, number and options
 parseFieldInfo :: Parser (String, Int, [Ast.OptionDefinition])
 parseFieldInfo = (,,) <$> (T.unpack <$> ident) <*> (symbol "=" *> integer) <*> parseFieldOptions
 
 parseMapField :: Parser Ast.MapField
-parseMapField = do
-  _ <- symbol "map"
-  (kt, vt) <- parseMapFieldTypes
-  (fieldName, num, opts) <- parseFieldInfo
-  _ <- consumeSemicolons
-  return $ Ast.MapField fieldName kt vt num opts
+parseMapField =
+  symbol "map"
+    *> (uc Ast.MapField
+    <$> kv
+    <*> parseFieldInfo)
+    <* consumeSemicolons
+  where
+    kv = between (symbol "<") (symbol ">") ((,) <$> parseKeyType <*> (symbol "," *> parseFieldType))
+    uc f (k, v) (na, nu, o) = f na k v nu o
 
 data OneOfFieldElement = OFFieldDef Ast.FieldDefinition | OFOptDef Ast.OptionDefinition
 
-parseOneOfElements :: Parser [OneOfFieldElement]
-parseOneOfElements = [] <$ some (symbol ";") <|> many (OFFieldDef <$> try parseFieldDefinition <|> OFOptDef <$> parseOptionDefinition)
-
 parseOneOfField :: Parser Ast.OneOfField
-parseOneOfField = do
-  _ <- symbol "oneof"
-  n <- T.unpack <$> ident
-  e <- between (symbol "{") (symbol "}") parseOneOfElements
-  _ <- many $ symbol ";"
-  return $ assemble n e
+parseOneOfField =
+  symbol "oneof"
+    *> (assemble <$> name <*> body)
+    <* many (symbol ";")
   where
+    name = T.unpack <$> ident
+    body = between (symbol "{") (symbol "}") elements
+    elements = [] <$ some (symbol ";") <|> many (OFFieldDef <$> try parseFieldDefinition <|> OFOptDef <$> parseOptionDefinition)
     assemble n e = Ast.OneOfField n [f | OFFieldDef f <- e] [o | OFOptDef o <- e]
 
 parseFieldType :: Parser Ast.Type
@@ -315,13 +315,14 @@ protoParser = do
   return $ assemble sy e
   where
     assemble s e =
-      Ast.ProtoFile s
-      [p | PEPackageSpec p <- e]
-      [p | PEImportStmt p <- e]
-      [o | PEOptionDef o <- e]
-      [m | PEMsgDef m <- e]
-      [en | PEEnumDef en <- e]
-      [se | PEServiceDef se <- e]
+      Ast.ProtoFile
+        s
+        [p | PEPackageSpec p <- e]
+        [p | PEImportStmt p <- e]
+        [o | PEOptionDef o <- e]
+        [m | PEMsgDef m <- e]
+        [en | PEEnumDef en <- e]
+        [se | PEServiceDef se <- e]
 
 parseProto :: String -> String -> Either String Ast.ProtoFile
 parseProto f i = case parse protoParser f (T.pack i) of
