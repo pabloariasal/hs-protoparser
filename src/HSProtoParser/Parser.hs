@@ -136,16 +136,15 @@ parseEnumField = do
 parseEnumElements :: Parser [EnumElement]
 parseEnumElements = ([] <$ some (symbol ";")) <|> many (EOpt <$> parseOptionDefinition <|> EField <$> parseEnumField)
 
-assembleEnum :: String -> [EnumElement] -> Ast.EnumDefinition
-assembleEnum n e = Ast.EnumDefinition n [o | EOpt o <- e] [f | EField f <- e]
-
 parseEnumDefinition :: Parser Ast.EnumDefinition
 parseEnumDefinition = do
   _ <- symbol "enum"
   n <- T.unpack <$> ident
   e <- between (symbol "{") (symbol "}") parseEnumElements
   _ <- many $ symbol ";"
-  return $ assembleEnum n e
+  return $ assemble n e
+  where
+    assemble n e = Ast.EnumDefinition n [o | EOpt o <- e] [f | EField f <- e]
 
 parseFieldNumberSpec :: Parser Ast.FieldNumberSpec
 parseFieldNumberSpec = try singleNum <|> range
@@ -198,16 +197,15 @@ data OneOfFieldElement = OFFieldDef Ast.FieldDefinition | OFOptDef Ast.OptionDef
 parseOneOfElements :: Parser [OneOfFieldElement]
 parseOneOfElements = [] <$ some (symbol ";") <|> many (OFFieldDef <$> try parseFieldDefinition <|> OFOptDef <$> parseOptionDefinition)
 
-assembleOneOfField :: String -> [OneOfFieldElement] -> Ast.OneOfField
-assembleOneOfField n e = Ast.OneOfField n [f | OFFieldDef f <- e] [o | OFOptDef o <- e]
-
 parseOneOfField :: Parser Ast.OneOfField
 parseOneOfField = do
   _ <- symbol "oneof"
   n <- T.unpack <$> ident
   e <- between (symbol "{") (symbol "}") parseOneOfElements
   _ <- many $ symbol ";"
-  return $ assembleOneOfField n e
+  return $ assemble n e
+  where
+    assemble n e = Ast.OneOfField n [f | OFFieldDef f <- e] [o | OFOptDef o <- e]
 
 parseFieldType :: Parser Ast.Type
 parseFieldType =
@@ -269,26 +267,24 @@ parseMessageElements =
           ]
       )
 
---TODO change Text for Identifier type aliasj
-assembleMessageDefinition :: Text -> [MessageElement] -> Ast.MessageDefinition
-assembleMessageDefinition n e =
-  Ast.MessageDefinition
-    (T.unpack n)
-    [f | MEOneF f <- e]
-    [f | MEMapF f <- e]
-    [f | MENorF f <- e]
-    [m | MEMsg m <- e]
-    [m | MEEnum m <- e]
-    [o | MEOpt o <- e]
-    [r | MEReservedFieldStmt r <- e]
-
 parseMessageDefinition :: Parser Ast.MessageDefinition
 parseMessageDefinition = do
   _ <- symbol "message"
   n <- ident
   e <- between (symbol "{") (symbol "}") parseMessageElements
   _ <- many $ symbol ";"
-  return $ assembleMessageDefinition n e
+  return $ assemble n e
+  where
+    assemble n e =
+      Ast.MessageDefinition
+        (T.unpack n)
+        [f | MEOneF f <- e]
+        [f | MEMapF f <- e]
+        [f | MENorF f <- e]
+        [m | MEMsg m <- e]
+        [m | MEEnum m <- e]
+        [o | MEOpt o <- e]
+        [r | MEReservedFieldStmt r <- e]
 
 -- TODO implement
 -- parseServiceDefinition :: Parser Ast.ServiceDefinition
@@ -301,9 +297,6 @@ data ProtoFileElement
   | PEMsgDef Ast.MessageDefinition
   | PEEnumDef Ast.EnumDefinition
   | PEServiceDef Ast.ServiceDefinition
-
-assembleFile :: Ast.SyntaxStatement -> [ProtoFileElement] -> Ast.ProtoFile
-assembleFile s e = Ast.ProtoFile s [p | PEPackageSpec p <- e] [p | PEImportStmt p <- e] [o | PEOptionDef o <- e] [m | PEMsgDef m <- e] [en | PEEnumDef en <- e] [se | PEServiceDef se <- e]
 
 protoParser :: Parser Ast.ProtoFile
 protoParser = do
@@ -319,7 +312,16 @@ protoParser = do
           -- PEServiceDef <$> parseServiceDefinition
         ]
   _ <- eof
-  return $ assembleFile sy e
+  return $ assemble sy e
+  where
+    assemble s e =
+      Ast.ProtoFile s
+      [p | PEPackageSpec p <- e]
+      [p | PEImportStmt p <- e]
+      [o | PEOptionDef o <- e]
+      [m | PEMsgDef m <- e]
+      [en | PEEnumDef en <- e]
+      [se | PEServiceDef se <- e]
 
 parseProto :: String -> String -> Either String Ast.ProtoFile
 parseProto f i = case parse protoParser f (T.pack i) of
